@@ -8,7 +8,7 @@ import { BehaviorSubject } from 'rxjs';
 export class AuthService {
   private readonly ADMIN_USER = 'JoseAdmin';
   private readonly ADMIN_PASS = 'Admin1234';
-  private readonly STORAGE_KEY = 'prestadmin_auth_status';
+  private readonly STORAGE_KEY = 'sanprestamos_auth_status';
 
   private authStatusSubject = new BehaviorSubject<boolean>(this.checkInitialAuth());
   public authStatus$ = this.authStatusSubject.asObservable();

@@ -12,7 +12,7 @@ import { ThemeService } from './services/theme.service';
   styleUrl: './app.component.css'
 })
 export class AppComponent {
-  title = 'JosePrestamos';
+  title = 'SanPrestamos';
   auth = inject(AuthService);
   theme = inject(ThemeService); // Initializes theme on app load
 
