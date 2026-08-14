@@ -1,0 +1,96 @@
+<div class="h-screen w-full bg-slate-50 dark:bg-slate-900 flex font-sans text-slate-900 dark:text-slate-100 overflow-hidden transition-colors duration-300" *ngIf="{ isAuth: auth.authStatus$ | async, isDark: theme.isDark$ | async } as state">
+  <!-- Sidebar -->
+  <aside *ngIf="state.isAuth" class="w-72 bg-[#0f172a] dark:bg-[#080c16] text-slate-300 flex flex-col shadow-2xl hidden md:flex relative transition-colors duration-300 border-r border-transparent dark:border-slate-800/50">
+    <!-- Decoración sutil de fondo -->
+    <div class="absolute top-0 left-0 w-full h-32 bg-gradient-to-b from-emerald-500/10 to-transparent pointer-events-none"></div>
+    
+    <div class="h-20 flex items-center px-8 font-extrabold text-2xl tracking-wide text-white border-b border-slate-800/50 z-10">
+      <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-400 to-emerald-600 flex items-center justify-center mr-3 shadow-lg shadow-emerald-500/20">
+        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+      </div>
+      PrestAdmin
+    </div>
+    
+    <nav class="flex-1 py-8 space-y-2 px-5 z-10 overflow-y-auto">
+      <p class="px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-4">Menú Principal</p>
+      
+      <a routerLink="/dashboard" routerLinkActive="bg-emerald-500/10 text-emerald-400 font-medium" class="group px-4 py-3.5 rounded-xl hover:bg-slate-800/50 dark:hover:bg-slate-800/80 hover:text-white transition-all duration-200 flex items-center relative overflow-hidden">
+        <svg class="w-5 h-5 mr-3 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+        Dashboard
+      </a>
+      
+      <a routerLink="/clients" routerLinkActive="bg-emerald-500/10 text-emerald-400 font-medium" class="group px-4 py-3.5 rounded-xl hover:bg-slate-800/50 dark:hover:bg-slate-800/80 hover:text-white transition-all duration-200 flex items-center relative overflow-hidden">
+        <svg class="w-5 h-5 mr-3 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+        Clientes
+      </a>
+      
+      <a routerLink="/loans" routerLinkActive="bg-emerald-500/10 text-emerald-400 font-medium" class="group px-4 py-3.5 rounded-xl hover:bg-slate-800/50 dark:hover:bg-slate-800/80 hover:text-white transition-all duration-200 flex items-center relative overflow-hidden">
+        <svg class="w-5 h-5 mr-3 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+        Préstamos
+      </a>
+      
+      <a routerLink="/properties" routerLinkActive="bg-emerald-500/10 text-emerald-400 font-medium" class="group px-4 py-3.5 rounded-xl hover:bg-slate-800/50 dark:hover:bg-slate-800/80 hover:text-white transition-all duration-200 flex items-center relative overflow-hidden">
+        <svg class="w-5 h-5 mr-3 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+        Alquileres
+      </a>
+    </nav>
+    
+    <div class="px-5 space-y-2 mb-4 z-10">
+      <!-- Dark Mode Toggle -->
+      <button (click)="theme.toggleTheme()" class="w-full flex items-center justify-between px-4 py-2.5 rounded-xl text-sm font-medium text-slate-300 hover:text-white bg-slate-800/30 hover:bg-slate-800/50 transition-all border border-slate-700/50">
+        <div class="flex items-center">
+          <svg *ngIf="!state.isDark" class="w-4 h-4 mr-2 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+          <svg *ngIf="state.isDark" class="w-4 h-4 mr-2 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
+          {{ state.isDark ? 'Modo Oscuro' : 'Modo Claro' }}
+        </div>
+        <div class="w-8 h-4 bg-slate-700 rounded-full relative">
+          <div class="absolute w-3 h-3 bg-white rounded-full top-0.5 transition-all duration-300" [ngClass]="state.isDark ? 'right-0.5' : 'left-0.5'"></div>
+        </div>
+      </button>
+
+      <!-- Logout -->
+      <button (click)="logout()" class="w-full flex items-center justify-center px-4 py-2.5 rounded-xl text-sm font-medium text-slate-300 hover:text-white bg-slate-800/50 hover:bg-red-500/20 hover:border-red-500/30 border border-transparent transition-all">
+        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+        Cerrar Sesión
+      </button>
+    </div>
+
+    <div class="p-6 border-t border-slate-800/50 z-10 bg-slate-900/50 backdrop-blur-sm">
+      <div class="flex items-center space-x-3 opacity-60 hover:opacity-100 transition-opacity">
+        <div class="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center border border-slate-700">
+          <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>
+        </div>
+        <div class="text-xs">
+          <p class="text-slate-400">Desarrollado por</p>
+          <p class="font-medium text-emerald-400">Sergio Pacheco</p>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="flex-1 flex flex-col min-w-0 overflow-hidden bg-[#f8fafc] dark:bg-slate-900 transition-colors duration-300">
+    <!-- Mobile Header -->
+    <header *ngIf="state.isAuth" class="h-16 bg-white dark:bg-slate-800 shadow-sm flex items-center justify-between px-6 border-b border-slate-100 dark:border-slate-700 md:hidden z-20 relative transition-colors duration-300">
+      <div class="font-bold text-xl text-emerald-600 flex items-center">
+        PrestAdmin
+      </div>
+      <div class="flex items-center space-x-2">
+        <button (click)="theme.toggleTheme()" class="text-slate-500 hover:text-emerald-600 transition-colors p-2 rounded-lg bg-slate-50 dark:bg-slate-700 dark:text-slate-400">
+          <svg *ngIf="!state.isDark" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+          <svg *ngIf="state.isDark" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
+        </button>
+        <button (click)="logout()" class="text-slate-500 hover:text-red-600 transition-colors p-2 rounded-lg bg-slate-50 dark:bg-slate-700 dark:text-slate-400">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+        </button>
+      </div>
+    </header>
+    
+    <!-- Scrolling Content Area -->
+    <div class="flex-1 overflow-y-auto scroll-smooth" [ngClass]="state.isAuth ? 'p-4 md:p-8' : 'p-0'">
+      <div class="mx-auto w-full h-full" [ngClass]="state.isAuth ? 'max-w-7xl' : ''">
+        <router-outlet></router-outlet>
+      </div>
+    </div>
+  </main>
+</div>

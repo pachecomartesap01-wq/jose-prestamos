@@ -1,0 +1,129 @@
+<div *ngIf="property$ | async as property" class="max-w-5xl mx-auto space-y-6 animate-fade-in-up">
+  
+  <div class="mb-6 flex items-center justify-between">
+    <div class="flex items-center text-sm font-medium text-slate-500 dark:text-slate-400">
+      <a routerLink="/properties" class="hover:text-emerald-500 dark:hover:text-emerald-400 transition">Propiedades</a>
+      <svg class="w-4 h-4 mx-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+      <span class="text-slate-800 dark:text-slate-200">{{ property.address }}</span>
+    </div>
+    
+    <a [routerLink]="['/properties', property.id, 'edit']" class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:text-emerald-600 dark:hover:text-emerald-400 px-4 py-2 rounded-lg text-sm font-medium transition flex items-center">
+      <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+      Editar
+    </a>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <!-- Resumen de Propiedad -->
+    <div class="md:col-span-1 space-y-6">
+      <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 overflow-hidden transition-colors">
+        <div class="p-6 border-b border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50 flex flex-col items-center text-center">
+          <div class="w-16 h-16 rounded-full flex items-center justify-center font-bold text-xl mb-3 shadow-inner"
+               [ngClass]="property.status === 'rented' ? 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400' : 'bg-amber-100 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400'">
+            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+          </div>
+          <h2 class="text-xl font-bold text-slate-800 dark:text-slate-100">{{ property.address }}</h2>
+          <span class="mt-2 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider"
+                [ngClass]="property.status === 'rented' ? 'bg-emerald-100 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20' : 'bg-amber-100 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-500/20'">
+            {{ property.status === 'rented' ? 'Alquilada' : 'Disponible' }}
+          </span>
+        </div>
+        
+        <div class="p-6 space-y-4">
+          <div>
+            <p class="text-xs text-slate-500 dark:text-slate-400 uppercase font-semibold">Precio de Alquiler</p>
+            <p class="text-lg font-bold text-emerald-600 dark:text-emerald-400">${{ property.rentAmount | number:'1.2-2' }} / mes</p>
+          </div>
+          <div>
+            <p class="text-xs text-slate-500 dark:text-slate-400 uppercase font-semibold">Descripción</p>
+            <p class="text-sm text-slate-700 dark:text-slate-300 font-medium">{{ property.description || 'Sin descripción' }}</p>
+          </div>
+          <div *ngIf="property.tenantName">
+            <p class="text-xs text-slate-500 dark:text-slate-400 uppercase font-semibold">Inquilino Actual</p>
+            <div class="flex items-center mt-1">
+              <svg class="w-5 h-5 text-indigo-500 dark:text-indigo-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+              <div>
+                <p class="text-sm text-slate-800 dark:text-slate-200 font-bold">{{ property.tenantName }}</p>
+                <p class="text-xs text-slate-500 dark:text-slate-400">{{ property.tenantPhone }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pagos -->
+    <div class="md:col-span-2">
+      <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 overflow-hidden transition-colors">
+        <div class="p-6 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-slate-50/50 dark:bg-slate-800/50">
+          <div>
+            <h2 class="text-lg font-bold text-slate-800 dark:text-slate-100">Historial de Pagos</h2>
+            <p class="text-sm text-slate-500 dark:text-slate-400">Pagos recibidos por alquiler</p>
+          </div>
+          <button *ngIf="property.status === 'rented' && !showPaymentForm" (click)="openPaymentForm()" class="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-xl text-sm font-medium transition shadow-sm flex items-center">
+            <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+            Registrar Pago
+          </button>
+        </div>
+        
+        <!-- Formulario de Pago -->
+        <div *ngIf="showPaymentForm" class="p-6 border-b border-emerald-100 dark:border-emerald-500/20 bg-emerald-50/30 dark:bg-emerald-500/5 animate-fade-in-up">
+          <h3 class="text-md font-bold text-emerald-800 dark:text-emerald-400 mb-4">Registrar Nuevo Pago</h3>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Monto Pagado</label>
+              <div class="relative">
+                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 dark:text-slate-400">$</span>
+                <input type="number" [(ngModel)]="paymentAmount" class="w-full pl-7 pr-3 py-2 border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700/50 text-slate-900 dark:text-slate-100 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500" placeholder="0.00">
+              </div>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Fecha</label>
+              <input type="date" [(ngModel)]="paymentDate" class="w-full px-3 py-2 border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700/50 text-slate-900 dark:text-slate-100 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500">
+            </div>
+            <div class="sm:col-span-2">
+              <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Nota (Opcional)</label>
+              <input type="text" [(ngModel)]="paymentNotes" class="w-full px-3 py-2 border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700/50 text-slate-900 dark:text-slate-100 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 placeholder-slate-400 dark:placeholder-slate-500" placeholder="Ej. Pago correspondiente a Marzo">
+            </div>
+          </div>
+          <div class="flex justify-end space-x-3">
+            <button (click)="closePaymentForm()" class="px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-700/50 transition">
+              Cancelar
+            </button>
+            <button (click)="savePayment(property)" [disabled]="isSubmitting || paymentAmount <= 0" class="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium shadow transition disabled:opacity-50">
+              {{ isSubmitting ? 'Guardando...' : 'Confirmar Pago' }}
+            </button>
+          </div>
+        </div>
+
+        <!-- Lista de Pagos -->
+        <div class="divide-y divide-slate-100 dark:divide-slate-700">
+          <div *ngFor="let payment of property.payments" class="p-4 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition flex items-center justify-between">
+            <div class="flex items-center">
+              <div class="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20 flex items-center justify-center mr-4">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+              </div>
+              <div>
+                <p class="font-bold text-slate-800 dark:text-slate-200">${{ payment.amount | number:'1.2-2' }}</p>
+                <p class="text-xs text-slate-500 dark:text-slate-400">{{ payment.notes || 'Pago de alquiler' }}</p>
+              </div>
+            </div>
+            <div class="text-right">
+              <p class="text-sm font-medium text-slate-700 dark:text-slate-300">{{ payment.date | date:'mediumDate' }}</p>
+            </div>
+          </div>
+
+          <div *ngIf="!property.payments || property.payments.length === 0" class="p-8 text-center text-slate-500 dark:text-slate-400">
+            <svg class="w-12 h-12 mx-auto text-slate-300 dark:text-slate-600 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            <p>No hay pagos registrados para esta propiedad.</p>
+          </div>
+        </div>
+        
+      </div>
+    </div>
+  </div>
+</div>
+
+<div *ngIf="!(property$ | async)" class="flex justify-center items-center h-64">
+  <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500"></div>
+</div>

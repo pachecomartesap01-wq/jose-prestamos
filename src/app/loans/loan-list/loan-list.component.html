@@ -1,0 +1,101 @@
+<div class="max-w-7xl mx-auto space-y-6 animate-fade-in-up">
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="text-3xl font-bold text-slate-800 dark:text-slate-100 transition-colors">Préstamos</h1>
+      <p class="text-slate-500 dark:text-slate-400 mt-1">Lleva el control de los préstamos activos y su progreso de pago.</p>
+    </div>
+    <a routerLink="/loans/new" class="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-lg shadow-sm shadow-emerald-500/30 transition flex items-center font-medium">
+      <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+      Nuevo Préstamo
+    </a>
+  </div>
+
+  <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 overflow-hidden transition-colors">
+    <div class="p-6 border-b border-slate-100 dark:border-slate-700 flex items-center space-x-4">
+      <div class="relative flex-1 max-w-md">
+        <svg class="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+        <input type="text" [formControl]="searchControl" placeholder="Buscar préstamo por nombre de cliente..." class="w-full pl-10 pr-4 py-2 border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700/50 text-slate-900 dark:text-slate-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition placeholder-slate-400 dark:placeholder-slate-500">
+      </div>
+      <div class="flex space-x-2">
+        <select [formControl]="statusControl" class="border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700/50 text-slate-600 dark:text-slate-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-colors">
+          <option value="all">Todos los estados</option>
+          <option value="active">Activos</option>
+          <option value="completed">Completados</option>
+          <option value="defaulted">Atrasados</option>
+        </select>
+      </div>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-left">
+        <thead class="bg-slate-50 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 text-sm transition-colors">
+          <tr>
+            <th class="py-3 px-6 font-medium">Cliente</th>
+            <th class="py-3 px-6 font-medium">Monto / Tasa</th>
+            <th class="py-3 px-6 font-medium">Progreso</th>
+            <th class="py-3 px-6 font-medium">Estado</th>
+            <th class="py-3 px-6 font-medium text-right">Acciones</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100 dark:divide-slate-700 transition-colors">
+          <ng-container *ngIf="loans$ | async as loans; else loading">
+            <tr *ngIf="loans.length === 0">
+              <td colspan="5" class="py-8 text-center text-slate-500 dark:text-slate-400">
+                No hay préstamos registrados. ¡Crea el primero!
+              </td>
+            </tr>
+            <tr *ngFor="let loan of loans" class="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition cursor-pointer">
+              <td class="py-4 px-6">
+                <div class="font-medium text-slate-800 dark:text-slate-200">{{ loan.clientName }}</div>
+                <div class="text-xs text-slate-500 dark:text-slate-400">Inicio: {{ loan.startDate | date }}</div>
+              </td>
+              <td class="py-4 px-6">
+                <div class="font-medium text-slate-800 dark:text-slate-200">${{ loan.amount | number }}</div>
+                <div class="text-xs text-slate-500 dark:text-slate-400">{{ loan.interestRate }}% | {{ loan.duration }} cuotas ({{ loan.paymentFrequency }})</div>
+              </td>
+              <td class="py-4 px-6 w-48">
+                <div class="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 mb-1">
+                  <span>{{ loan.progress | number:'1.0-0' }}%</span>
+                </div>
+                <div class="w-full bg-slate-200 dark:bg-slate-600 rounded-full h-2">
+                  <div class="bg-emerald-500 h-2 rounded-full transition-all duration-500" [style.width]="loan.progress + '%'"></div>
+                </div>
+              </td>
+              <td class="py-4 px-6">
+                <span *ngIf="loan.status === 'active'" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-500/10 text-blue-800 dark:text-blue-400 border border-blue-200 dark:border-blue-500/20">
+                  Activo
+                </span>
+                <span *ngIf="loan.status === 'completed'" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 dark:bg-emerald-500/10 text-emerald-800 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20">
+                  Pagado
+                </span>
+                <span *ngIf="loan.status === 'defaulted'" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 dark:bg-red-500/10 text-red-800 dark:text-red-400 border border-red-200 dark:border-red-500/20">
+                  Atrasado
+                </span>
+              </td>
+              <td class="py-4 px-6 text-right">
+                <div class="flex items-center justify-end space-x-2">
+                  <a [routerLink]="['/loans', loan.id]" title="Ver Cuotas" class="text-blue-500 hover:text-blue-700 dark:hover:text-blue-400 transition font-medium text-sm border border-blue-200 dark:border-blue-500/30 px-3 py-1 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-500/10">
+                    Ver
+                  </a>
+                  <a [routerLink]="['/loans', loan.id, 'edit']" title="Editar Préstamo" class="text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition p-1 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-500/10">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                  </a>
+                  <button (click)="deleteLoan(loan.id)" title="Eliminar Préstamo" class="text-slate-400 hover:text-red-600 dark:hover:text-red-400 transition p-1 rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </ng-container>
+          <ng-template #loading>
+            <tr>
+              <td colspan="5" class="py-8 text-center text-slate-500 dark:text-slate-400">
+                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500 mx-auto mb-2"></div>
+                Cargando préstamos...
+              </td>
+            </tr>
+          </ng-template>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
