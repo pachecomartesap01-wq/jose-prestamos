@@ -1,0 +1,198 @@
+<div class="max-w-4xl mx-auto animate-fade-in-up">
+  <div class="mb-6 flex items-center text-sm font-medium text-slate-500">
+    <a routerLink="/loans" class="hover:text-emerald-500 transition">Préstamos</a>
+    <svg class="w-4 h-4 mx-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+    <span class="text-slate-800">{{ isEditMode ? 'Editar Préstamo' : 'Nuevo Préstamo' }}</span>
+  </div>
+
+  <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+    <div class="p-8 border-b border-slate-100 bg-emerald-50/50">
+      <h1 class="text-2xl font-bold text-slate-800">{{ isEditMode ? 'Editar Préstamo' : 'Configurar Préstamo' }}</h1>
+      <p class="text-slate-500 mt-1">{{ isEditMode ? 'Modifica las condiciones del préstamo. Esto generará un nuevo plan de cuotas.' : 'Define el monto, tasa de interés y los plazos para generar las cuotas automáticamente.' }}</p>
+    </div>
+    
+    <div class="p-8">
+      <form *ngIf="!isPreviewMode" [formGroup]="loanForm" (ngSubmit)="onSubmit()" class="space-y-8">
+        
+        <!-- Sección 1: Cliente -->
+        <div>
+          <h2 class="text-lg font-bold text-slate-800 mb-4 flex items-center">
+            <span class="bg-emerald-100 text-emerald-600 w-6 h-6 rounded-full inline-flex items-center justify-center text-sm mr-2">1</span>
+            Seleccionar Cliente
+          </h2>
+          <div class="space-y-2">
+            <select formControlName="clientId" 
+                    class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition appearance-none"
+                    [ngClass]="{'border-red-500 focus:ring-red-500': loanForm.get('clientId')?.invalid && loanForm.get('clientId')?.touched}">
+              <option value="" disabled selected>Selecciona un cliente de la lista...</option>
+              <option *ngFor="let client of clients$ | async" [value]="client.id">
+                {{ client.name }} ({{ client.phone }})
+              </option>
+            </select>
+            <div *ngIf="loanForm.get('clientId')?.invalid && loanForm.get('clientId')?.touched" class="text-red-500 text-xs mt-1">
+              Debes seleccionar un cliente. Si no existe, ve a la sección de Clientes y créalo primero.
+            </div>
+          </div>
+        </div>
+
+        <hr class="border-slate-100">
+
+        <!-- Sección 2: Configuración del Préstamo -->
+        <div>
+          <h2 class="text-lg font-bold text-slate-800 mb-4 flex items-center">
+            <span class="bg-emerald-100 text-emerald-600 w-6 h-6 rounded-full inline-flex items-center justify-center text-sm mr-2">2</span>
+            Términos del Préstamo
+          </h2>
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Monto -->
+            <div class="space-y-2">
+              <label class="block text-sm font-medium text-slate-700">Monto del Préstamo ($)</label>
+              <div class="relative">
+                <span class="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400 font-medium">$</span>
+                <input type="number" formControlName="amount" placeholder="0.00" 
+                       class="w-full pl-8 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition">
+              </div>
+            </div>
+
+            <!-- Tasa de Interés -->
+            <div class="space-y-2">
+              <label class="block text-sm font-medium text-slate-700">Tasa de Interés (%)</label>
+              <div class="relative">
+                <input type="number" formControlName="interestRate" placeholder="0" 
+                       class="w-full pl-4 pr-8 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition">
+                <span class="absolute right-4 top-1/2 transform -translate-y-1/2 text-slate-400 font-medium">%</span>
+              </div>
+            </div>
+
+            <!-- Duración -->
+            <div class="space-y-2">
+              <label class="block text-sm font-medium text-slate-700">Duración (Cantidad de Cuotas)</label>
+              <input type="number" formControlName="duration" placeholder="Ej. 12" 
+                     class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition">
+            </div>
+
+            <!-- Frecuencia -->
+            <div class="space-y-2">
+              <label class="block text-sm font-medium text-slate-700">Frecuencia de Pago</label>
+              <select formControlName="paymentFrequency" 
+                      class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition appearance-none">
+                <option value="daily">Diario</option>
+                <option value="weekly">Semanal</option>
+                <option value="biweekly">Quincenal</option>
+                <option value="monthly">Mensual</option>
+              </select>
+            </div>
+
+            <!-- Fecha de Inicio -->
+            <div class="space-y-2">
+              <label class="block text-sm font-medium text-slate-700">Fecha de Inicio</label>
+              <input type="date" formControlName="startDate"
+                     class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition">
+            </div>
+          </div>
+        </div>
+
+        <!-- Resumen del Préstamo (Live Preview) -->
+        <div *ngIf="loanForm.get('amount')?.value > 0" class="bg-emerald-50 rounded-xl p-6 border border-emerald-100 mb-6 animate-fade-in-up">
+          <h3 class="text-sm font-bold text-emerald-800 uppercase tracking-wider mb-4">Resumen del Préstamo</h3>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
+            <div>
+              <div class="text-xs text-emerald-600 mb-1">Total Intereses</div>
+              <div class="text-xl font-bold text-slate-800">${{ loanSummary.totalInterest | number:'1.2-2' }}</div>
+            </div>
+            <div>
+              <div class="text-xs text-emerald-600 mb-1">Total a Devolver</div>
+              <div class="text-xl font-bold text-slate-800">${{ loanSummary.totalAmount | number:'1.2-2' }}</div>
+            </div>
+            <div class="bg-white p-4 rounded-lg shadow-sm border border-emerald-200 text-center">
+              <div class="text-xs text-emerald-600 font-bold mb-1 uppercase tracking-wide">Valor de la Cuota</div>
+              <div class="text-3xl font-black text-emerald-600">
+                ${{ loanSummary.installmentAmount | number:'1.2-2' }}
+              </div>
+              <div class="text-xs font-medium text-slate-500 mt-1">{{ loanSummary.freqLabel }}</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Acciones -->
+        <div class="pt-6 border-t border-slate-100 flex items-center justify-end space-x-4">
+          <a routerLink="/loans" class="px-6 py-3 font-medium text-slate-500 hover:text-slate-800 transition">Cancelar</a>
+          <button type="submit" [disabled]="isSubmitting"
+                  class="bg-emerald-500 hover:bg-emerald-600 text-white px-8 py-3 rounded-xl shadow-sm shadow-emerald-500/30 transition font-medium flex items-center disabled:opacity-50 disabled:cursor-not-allowed">
+            <svg *ngIf="!isSubmitting" class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+            <svg *ngIf="isSubmitting" class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            {{ isSubmitting ? 'Generando...' : 'Generar Vista Previa' }}
+          </button>
+        </div>
+      </form>
+
+      <!-- Vista Previa de Cuotas -->
+      <div *ngIf="isPreviewMode" class="animate-fade-in-up space-y-8">
+        <!-- Resumen -->
+        <div class="bg-emerald-50 rounded-xl p-6 border border-emerald-100">
+          <h3 class="text-sm font-bold text-emerald-800 uppercase tracking-wider mb-4">Resumen del Plan de Pagos</h3>
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-6 items-center">
+            <div>
+              <div class="text-xs text-emerald-600 mb-1">Monto Prestado</div>
+              <div class="text-lg font-bold text-slate-800">${{ previewLoan?.amount | number:'1.2-2' }}</div>
+            </div>
+            <div>
+              <div class="text-xs text-emerald-600 mb-1">Total Intereses</div>
+              <div class="text-lg font-bold text-slate-800">${{ loanSummary.totalInterest | number:'1.2-2' }}</div>
+            </div>
+            <div>
+              <div class="text-xs text-emerald-600 mb-1">Total a Devolver</div>
+              <div class="text-lg font-bold text-slate-800">${{ loanSummary.totalAmount | number:'1.2-2' }}</div>
+            </div>
+            <div class="bg-white p-3 rounded-lg shadow-sm border border-emerald-200 text-center">
+              <div class="text-[10px] text-emerald-600 font-bold mb-1 uppercase tracking-wide">Valor Cuota</div>
+              <div class="text-xl font-black text-emerald-600">
+                ${{ loanSummary.installmentAmount | number:'1.2-2' }}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tabla de Cuotas -->
+        <div>
+          <h3 class="text-lg font-bold text-slate-800 mb-4">Detalle de Cuotas Generadas</h3>
+          <div class="overflow-hidden rounded-xl border border-slate-200">
+            <table class="w-full text-left text-sm">
+              <thead class="bg-slate-50 text-slate-500">
+                <tr>
+                  <th class="py-3 px-4 font-medium"># Cuota</th>
+                  <th class="py-3 px-4 font-medium">Fecha de Pago</th>
+                  <th class="py-3 px-4 font-medium text-right">Monto</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100">
+                <tr *ngFor="let inst of previewInstallments; let i = index" class="hover:bg-slate-50">
+                  <td class="py-3 px-4 font-medium text-slate-800">{{ i + 1 }}</td>
+                  <td class="py-3 px-4 text-slate-600">{{ inst.dueDate | date:'mediumDate' }}</td>
+                  <td class="py-3 px-4 font-medium text-slate-800 text-right">${{ inst.amount | number:'1.2-2' }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Acciones Confirmar -->
+        <div class="pt-6 border-t border-slate-100 flex items-center justify-end space-x-4">
+          <button type="button" (click)="cancelPreview()" class="px-6 py-3 font-medium text-slate-500 hover:text-slate-800 transition">Volver a Editar</button>
+          <button type="button" (click)="confirmAndSave()" [disabled]="isSubmitting"
+                  class="bg-emerald-500 hover:bg-emerald-600 text-white px-8 py-3 rounded-xl shadow-sm shadow-emerald-500/30 transition font-medium flex items-center disabled:opacity-50 disabled:cursor-not-allowed">
+            <svg *ngIf="isSubmitting" class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            {{ isSubmitting ? 'Guardando...' : 'Confirmar y Guardar Préstamo' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

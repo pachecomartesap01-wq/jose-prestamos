@@ -1,0 +1,138 @@
+<div class="max-w-3xl mx-auto animate-fade-in-up">
+  <div class="mb-6 flex items-center text-sm font-medium text-slate-500 dark:text-slate-400">
+    <a routerLink="/clients" class="hover:text-emerald-500 dark:hover:text-emerald-400 transition">Clientes</a>
+    <svg class="w-4 h-4 mx-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+    <span class="text-slate-800 dark:text-slate-200">{{ isEditMode ? 'Editar Cliente' : 'Nuevo Cliente' }}</span>
+  </div>
+
+  <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 overflow-hidden transition-colors">
+    <div class="p-8 border-b border-slate-100 dark:border-slate-700">
+      <h1 class="text-2xl font-bold text-slate-800 dark:text-slate-100">{{ isEditMode ? 'Editar Cliente' : 'Registrar Nuevo Cliente' }}</h1>
+      <p class="text-slate-500 dark:text-slate-400 mt-1">{{ isEditMode ? 'Modifica los datos personales de tu cliente.' : 'Ingresa los datos personales del prestatario para abrir su perfil.' }}</p>
+    </div>
+    
+    <div class="p-8">
+      <form [formGroup]="clientForm" (ngSubmit)="onSubmit()" class="space-y-8">
+        
+        <!-- Sección: Datos Personales -->
+        <div>
+          <h2 class="text-lg font-bold text-slate-800 dark:text-slate-200 mb-4 border-b border-slate-100 dark:border-slate-700 pb-2">Datos Personales</h2>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Nombre -->
+            <div class="space-y-2">
+              <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">Nombre Completo <span class="text-red-500">*</span></label>
+              <input type="text" formControlName="name" placeholder="Ej. Juan Pérez" 
+                     class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 text-slate-900 dark:text-slate-100 rounded-xl focus:bg-white dark:focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition placeholder-slate-400 dark:placeholder-slate-500"
+                     [ngClass]="{'border-red-500 focus:ring-red-500': clientForm.get('name')?.invalid && clientForm.get('name')?.touched}">
+              <div *ngIf="clientForm.get('name')?.invalid && clientForm.get('name')?.touched" class="text-red-500 dark:text-red-400 text-xs mt-1">
+                El nombre es requerido (mínimo 3 caracteres).
+              </div>
+            </div>
+
+            <!-- Cédula -->
+            <div class="space-y-2">
+              <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">Número de Cédula/Identidad <span class="text-red-500">*</span></label>
+              <input type="text" formControlName="documentId" placeholder="Ej. 001-1234567-8" 
+                     class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 text-slate-900 dark:text-slate-100 rounded-xl focus:bg-white dark:focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition placeholder-slate-400 dark:placeholder-slate-500"
+                     [ngClass]="{'border-red-500 focus:ring-red-500': clientForm.get('documentId')?.invalid && clientForm.get('documentId')?.touched}">
+              <div *ngIf="clientForm.get('documentId')?.invalid && clientForm.get('documentId')?.touched" class="text-red-500 dark:text-red-400 text-xs mt-1">
+                La cédula es requerida.
+              </div>
+            </div>
+
+            <!-- Fecha de Nacimiento -->
+            <div class="space-y-2">
+              <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">Fecha de Nacimiento</label>
+              <input type="date" formControlName="birthDate" 
+                     class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 text-slate-900 dark:text-slate-100 rounded-xl focus:bg-white dark:focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition">
+            </div>
+
+            <!-- Sexo -->
+            <div class="space-y-2">
+              <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">Sexo (Opcional)</label>
+              <select formControlName="gender" 
+                      class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 text-slate-900 dark:text-slate-100 rounded-xl focus:bg-white dark:focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition appearance-none">
+                <option value="">Seleccionar...</option>
+                <option value="M">Masculino</option>
+                <option value="F">Femenino</option>
+                <option value="O">Otro</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sección: Contacto -->
+        <div>
+          <h2 class="text-lg font-bold text-slate-800 dark:text-slate-200 mb-4 border-b border-slate-100 dark:border-slate-700 pb-2">Contacto y Ubicación</h2>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Teléfono -->
+            <div class="space-y-2">
+              <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">Teléfono <span class="text-red-500">*</span></label>
+              <input type="tel" formControlName="phone" placeholder="Ej. 809-555-0192" 
+                     class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 text-slate-900 dark:text-slate-100 rounded-xl focus:bg-white dark:focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition placeholder-slate-400 dark:placeholder-slate-500"
+                     [ngClass]="{'border-red-500 focus:ring-red-500': clientForm.get('phone')?.invalid && clientForm.get('phone')?.touched}">
+              <div *ngIf="clientForm.get('phone')?.invalid && clientForm.get('phone')?.touched" class="text-red-500 dark:text-red-400 text-xs mt-1">
+                El teléfono es requerido.
+              </div>
+            </div>
+
+            <!-- Correo Electrónico -->
+            <div class="space-y-2">
+              <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">Correo Electrónico</label>
+              <input type="email" formControlName="email" placeholder="Ej. juan@correo.com" 
+                     class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 text-slate-900 dark:text-slate-100 rounded-xl focus:bg-white dark:focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition placeholder-slate-400 dark:placeholder-slate-500">
+            </div>
+            
+            <!-- Ciudad -->
+            <div class="space-y-2">
+              <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">Ciudad</label>
+              <input type="text" formControlName="city" placeholder="Ej. Santo Domingo" 
+                     class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 text-slate-900 dark:text-slate-100 rounded-xl focus:bg-white dark:focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition placeholder-slate-400 dark:placeholder-slate-500">
+            </div>
+
+            <!-- Dirección -->
+            <div class="space-y-2 md:col-span-2">
+              <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">Dirección Exacta</label>
+              <textarea formControlName="address" rows="2" placeholder="Ej. Calle Principal #12, Ensanche Ozama" 
+                        class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 text-slate-900 dark:text-slate-100 rounded-xl focus:bg-white dark:focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition resize-none placeholder-slate-400 dark:placeholder-slate-500"></textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sección: Información Laboral -->
+        <div>
+          <h2 class="text-lg font-bold text-slate-800 dark:text-slate-200 mb-4 border-b border-slate-100 dark:border-slate-700 pb-2">Información Laboral (Opcional)</h2>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Ocupación -->
+            <div class="space-y-2">
+              <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">Ocupación / Cargo</label>
+              <input type="text" formControlName="occupation" placeholder="Ej. Contador" 
+                     class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 text-slate-900 dark:text-slate-100 rounded-xl focus:bg-white dark:focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition placeholder-slate-400 dark:placeholder-slate-500">
+            </div>
+
+            <!-- Empresa -->
+            <div class="space-y-2">
+              <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">Empresa donde trabaja</label>
+              <input type="text" formControlName="company" placeholder="Ej. Banco Nacional" 
+                     class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 text-slate-900 dark:text-slate-100 rounded-xl focus:bg-white dark:focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition placeholder-slate-400 dark:placeholder-slate-500">
+            </div>
+          </div>
+        </div>
+
+        <!-- Acciones -->
+        <div class="pt-6 border-t border-slate-100 dark:border-slate-700 flex items-center justify-end space-x-4">
+          <a routerLink="/clients" class="px-6 py-3 font-medium text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition">Cancelar</a>
+          <button type="submit" [disabled]="isSubmitting"
+                  class="bg-emerald-500 hover:bg-emerald-600 text-white px-8 py-3 rounded-xl shadow-sm shadow-emerald-500/30 transition font-medium flex items-center disabled:opacity-50 disabled:cursor-not-allowed">
+            <svg *ngIf="!isSubmitting" class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+            <svg *ngIf="isSubmitting" class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            {{ isSubmitting ? 'Guardando...' : (isEditMode ? 'Guardar Cambios' : 'Guardar Cliente') }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
