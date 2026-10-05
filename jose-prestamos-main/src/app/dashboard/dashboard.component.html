@@ -1,10 +1,27 @@
 <div class="max-w-7xl mx-auto space-y-6 animate-fade-in-up">
-  <div class="flex items-center justify-between">
-    <h1 class="text-3xl font-bold text-slate-800 dark:text-slate-100 transition-colors">Resumen General</h1>
-    <a routerLink="/loans/new" class="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-lg shadow shadow-emerald-500/30 transition flex items-center font-medium">
+  <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <h1 class="text-2xl sm:text-3xl font-bold text-slate-800 dark:text-slate-100 transition-colors">Resumen General</h1>
+    <a routerLink="/loans/new" class="w-full sm:w-auto justify-center bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-lg shadow shadow-emerald-500/30 transition flex items-center font-medium">
       <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
       Nuevo Préstamo
     </a>
+  </div>
+
+  <div *ngIf="loadError" role="alert" class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300">
+    {{ loadError }}
+  </div>
+  <ng-container *ngIf="syncStatus$ | async as sync">
+    <div *ngIf="sync.fromCache" role="status" class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200">
+      Mostrando datos guardados en este dispositivo; pueden faltar cambios recientes mientras se conecta con el servidor.
+    </div>
+    <div *ngIf="sync.hasPendingWrites" role="status" class="rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-200">
+      Hay cambios pendientes de sincronizar con el servidor.
+    </div>
+  </ng-container>
+  <div *ngIf="(incompleteLoansCount$ | async) as incompleteCount" class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200">
+    <ng-container *ngIf="incompleteCount > 0">
+      {{ incompleteCount }} préstamo(s) tienen datos incompletos o fechas inválidas. Revísalos antes de usar sus cifras.
+    </ng-container>
   </div>
 
   <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -51,6 +68,18 @@
       </div>
       <p class="text-3xl font-bold text-slate-800 dark:text-slate-100">{{ prestamosActivos$ | async }}</p>
     </div>
+
+    <div class="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-sm border border-amber-200 dark:border-amber-500/30 hover:shadow-md transition-all">
+      <h3 class="font-medium text-amber-700 dark:text-amber-300 mb-4">Cuotas vencidas</h3>
+      <p class="text-3xl font-bold text-slate-800 dark:text-slate-100">{{ cuotasVencidas$ | async }}</p>
+      <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Cuotas con saldo y fecha de vencimiento pasada</p>
+    </div>
+
+    <div class="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-sm border border-red-200 dark:border-red-500/30 hover:shadow-md transition-all">
+      <h3 class="font-medium text-red-700 dark:text-red-300 mb-4">Saldo vencido</h3>
+      <p class="text-3xl font-bold text-slate-800 dark:text-slate-100">${{ (saldoVencido$ | async) | number:'1.2-2' }}</p>
+      <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">No incluye cargos por mora</p>
+    </div>
   </div>
 
   <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-8">
@@ -60,8 +89,7 @@
         <a routerLink="/loans" class="text-sm text-emerald-500 hover:text-emerald-600 dark:hover:text-emerald-400 font-medium">Ver todos</a>
       </div>
       <div class="p-0 overflow-x-auto">
-        <!-- Mock table -->
-        <table class="w-full text-left">
+        <table class="w-full min-w-[620px] text-left">
           <thead class="bg-slate-50 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 text-sm">
             <tr>
               <th class="py-3 px-6 font-medium">Cliente</th>
@@ -72,21 +100,34 @@
           </thead>
           <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
             <ng-container *ngIf="prestamosRecientes$ | async as recientes">
-              <tr *ngIf="recientes.length === 0">
+              <tr *ngIf="recientes.length === 0 && !loadError">
                 <td colspan="4" class="py-6 text-center text-slate-500 dark:text-slate-400">No hay préstamos recientes</td>
               </tr>
               <tr *ngFor="let loan of recientes" class="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition cursor-pointer" [routerLink]="['/loans', loan.id]">
                 <td class="py-4 px-6">
                   <div class="font-medium text-slate-800 dark:text-slate-200">{{ loan.clientName }}</div>
-                  <div class="text-sm text-slate-500 dark:text-slate-400">{{ loan.startDate | date }}</div>
+                  <div class="text-sm text-slate-500 dark:text-slate-400">
+                    {{ loan.displayStartDate ? (loan.displayStartDate | date) : 'Sin fecha' }}
+                  </div>
                 </td>
-                <td class="py-4 px-6 font-medium text-slate-800 dark:text-slate-200">${{ loan.amount | number:'1.2-2' }}</td>
+                <td class="py-4 px-6 font-medium text-slate-800 dark:text-slate-200">
+                  <ng-container *ngIf="loan.displayAmount !== null; else incompleteAmount">
+                    ${{ loan.displayAmount | number:'1.2-2' }}
+                  </ng-container>
+                  <ng-template #incompleteAmount>Monto incompleto</ng-template>
+                </td>
                 <td class="py-4 px-6">
                   <span *ngIf="loan.status === 'active'" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-500/10 text-blue-800 dark:text-blue-400 border border-blue-200 dark:border-blue-500/20">
                     Activo
                   </span>
                   <span *ngIf="loan.status === 'completed'" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 dark:bg-emerald-500/10 text-emerald-800 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20">
                     Pagado
+                  </span>
+                  <span *ngIf="loan.status === 'defaulted'" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 dark:bg-red-500/10 text-red-800 dark:text-red-400 border border-red-200 dark:border-red-500/20">
+                    Atrasado
+                  </span>
+                  <span *ngIf="!['active', 'completed', 'defaulted'].includes(loan.status)" class="text-xs text-amber-700 dark:text-amber-300">
+                    Estado por revisar
                   </span>
                 </td>
                 <td class="py-4 px-6 text-right">

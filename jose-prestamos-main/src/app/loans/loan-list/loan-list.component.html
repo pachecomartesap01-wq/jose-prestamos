@@ -1,32 +1,42 @@
 <div class="max-w-7xl mx-auto space-y-6 animate-fade-in-up">
-  <div class="flex items-center justify-between">
+  <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
     <div>
-      <h1 class="text-3xl font-bold text-slate-800 dark:text-slate-100 transition-colors">Préstamos</h1>
-      <p class="text-slate-500 dark:text-slate-400 mt-1">Lleva el control de los préstamos activos y su progreso de pago.</p>
+      <h1 class="text-2xl sm:text-3xl font-bold text-slate-800 dark:text-slate-100 transition-colors">Préstamos</h1>
+      <p class="text-slate-500 dark:text-slate-400 mt-1">{{ isCashier ? 'Consulta préstamos y registra cobros de cuotas.' : 'Lleva el control de los préstamos activos y su progreso de pago.' }}</p>
     </div>
-    <a routerLink="/loans/new" class="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-lg shadow-sm shadow-emerald-500/30 transition flex items-center font-medium">
+    <a *ngIf="isAdmin" routerLink="/loans/new" class="w-full sm:w-auto justify-center bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-lg shadow-sm shadow-emerald-500/30 transition flex items-center font-medium">
       <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
       Nuevo Préstamo
     </a>
   </div>
 
+  <ng-container *ngIf="syncStatus$ | async as sync">
+    <div *ngIf="sync.fromCache" role="status" class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200">
+      Mostrando datos guardados en este dispositivo; la lista puede estar incompleta hasta que termine la sincronización.
+    </div>
+    <div *ngIf="sync.hasPendingWrites" role="status" class="rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-200">
+      Hay cambios pendientes de sincronizar con el servidor.
+    </div>
+  </ng-container>
+
   <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 overflow-hidden transition-colors">
-    <div class="p-6 border-b border-slate-100 dark:border-slate-700 flex items-center space-x-4">
+    <div class="p-4 sm:p-6 border-b border-slate-100 dark:border-slate-700 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
       <div class="relative flex-1 max-w-md">
         <svg class="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-        <input type="text" [formControl]="searchControl" placeholder="Buscar préstamo por nombre de cliente..." class="w-full pl-10 pr-4 py-2 border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700/50 text-slate-900 dark:text-slate-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition placeholder-slate-400 dark:placeholder-slate-500">
+        <input type="text" [formControl]="searchControl" placeholder="Buscar por cliente, teléfono o documento..." class="w-full pl-10 pr-4 py-2 border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700/50 text-slate-900 dark:text-slate-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition placeholder-slate-400 dark:placeholder-slate-500">
       </div>
-      <div class="flex space-x-2">
-        <select [formControl]="statusControl" class="border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700/50 text-slate-600 dark:text-slate-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-colors">
+      <div class="w-full sm:w-auto">
+        <select [formControl]="statusControl" class="w-full sm:w-auto border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700/50 text-slate-600 dark:text-slate-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-colors">
           <option value="all">Todos los estados</option>
           <option value="active">Activos</option>
+          <option value="overdue">Con cuotas vencidas</option>
           <option value="completed">Completados</option>
-          <option value="defaulted">Atrasados</option>
+          <option value="defaulted">En incumplimiento</option>
         </select>
       </div>
     </div>
     <div class="overflow-x-auto">
-      <table class="w-full text-left">
+      <table class="w-full min-w-[760px] text-left">
         <thead class="bg-slate-50 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 text-sm transition-colors">
           <tr>
             <th class="py-3 px-6 font-medium">Cliente</th>
@@ -40,13 +50,16 @@
           <ng-container *ngIf="loans$ | async as loans; else loading">
             <tr *ngIf="loans.length === 0">
               <td colspan="5" class="py-8 text-center text-slate-500 dark:text-slate-400">
-                No hay préstamos registrados. ¡Crea el primero!
+                <ng-container *ngIf="loadError; else noLoans">{{ loadError }}</ng-container>
+                <ng-template #noLoans>{{ isAdmin ? 'No hay préstamos registrados. ¡Crea el primero!' : 'No hay préstamos registrados.' }}</ng-template>
               </td>
             </tr>
             <tr *ngFor="let loan of loans" class="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition cursor-pointer">
               <td class="py-4 px-6">
                 <div class="font-medium text-slate-800 dark:text-slate-200">{{ loan.clientName }}</div>
-                <div class="text-xs text-slate-500 dark:text-slate-400">Inicio: {{ loan.startDate | date }}</div>
+                <div class="text-xs text-slate-500 dark:text-slate-400">
+                  Inicio: {{ loan.displayStartDate ? (loan.displayStartDate | date) : 'Sin fecha' }}
+                </div>
               </td>
               <td class="py-4 px-6">
                 <div class="font-medium text-slate-800 dark:text-slate-200">${{ loan.amount | number }}</div>
@@ -68,18 +81,21 @@
                   Pagado
                 </span>
                 <span *ngIf="loan.status === 'defaulted'" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 dark:bg-red-500/10 text-red-800 dark:text-red-400 border border-red-200 dark:border-red-500/20">
-                  Atrasado
+                  En incumplimiento
+                </span>
+                <span *ngIf="loan.overdueAmount > 0" class="mt-1 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 dark:bg-amber-500/10 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-500/20">
+                  Vencido · ${{ loan.overdueAmount | number:'1.2-2' }}
                 </span>
               </td>
               <td class="py-4 px-6 text-right">
                 <div class="flex items-center justify-end space-x-2">
-                  <a [routerLink]="['/loans', loan.id]" title="Ver Cuotas" class="text-blue-500 hover:text-blue-700 dark:hover:text-blue-400 transition font-medium text-sm border border-blue-200 dark:border-blue-500/30 px-3 py-1 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-500/10">
-                    Ver
+                  <a [routerLink]="['/loans', loan.id]" [title]="isCashier ? 'Cobrar cuotas' : 'Ver cuotas'" class="text-blue-500 hover:text-blue-700 dark:hover:text-blue-400 transition font-medium text-sm border border-blue-200 dark:border-blue-500/30 px-3 py-1 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-500/10">
+                    {{ isCashier ? 'Cobrar' : 'Ver' }}
                   </a>
-                  <a [routerLink]="['/loans', loan.id, 'edit']" title="Editar Préstamo" class="text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition p-1 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-500/10">
+                  <a *ngIf="isAdmin" [routerLink]="['/loans', loan.id, 'edit']" title="Editar Préstamo" class="text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition p-1 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-500/10">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
                   </a>
-                  <button (click)="deleteLoan(loan.id)" title="Eliminar Préstamo" class="text-slate-400 hover:text-red-600 dark:hover:text-red-400 transition p-1 rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10">
+                  <button *ngIf="isAdmin" (click)="deleteLoan(loan.id)" title="Eliminar Préstamo" class="text-slate-400 hover:text-red-600 dark:hover:text-red-400 transition p-1 rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                   </button>
                 </div>

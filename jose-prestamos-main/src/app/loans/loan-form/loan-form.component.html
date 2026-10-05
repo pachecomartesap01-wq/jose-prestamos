@@ -1,28 +1,32 @@
 <div class="max-w-4xl mx-auto animate-fade-in-up">
-  <div class="mb-6 flex items-center text-sm font-medium text-slate-500">
+  <div class="mb-6 flex items-center text-sm font-medium text-slate-500 dark:text-slate-400">
     <a routerLink="/loans" class="hover:text-emerald-500 transition">Préstamos</a>
     <svg class="w-4 h-4 mx-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
-    <span class="text-slate-800">{{ isEditMode ? 'Editar Préstamo' : 'Nuevo Préstamo' }}</span>
+    <span class="text-slate-800 dark:text-slate-200">{{ isEditMode ? 'Editar Préstamo' : 'Nuevo Préstamo' }}</span>
   </div>
 
-  <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-    <div class="p-8 border-b border-slate-100 bg-emerald-50/50">
-      <h1 class="text-2xl font-bold text-slate-800">{{ isEditMode ? 'Editar Préstamo' : 'Configurar Préstamo' }}</h1>
-      <p class="text-slate-500 mt-1">{{ isEditMode ? 'Modifica las condiciones del préstamo. Esto generará un nuevo plan de cuotas.' : 'Define el monto, tasa de interés y los plazos para generar las cuotas automáticamente.' }}</p>
+  <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 overflow-hidden transition-colors">
+    <div class="p-5 sm:p-8 border-b border-slate-100 dark:border-slate-700 bg-emerald-50/50 dark:bg-emerald-500/5">
+      <h1 class="text-2xl font-bold text-slate-800 dark:text-slate-100">{{ isEditMode ? 'Editar Préstamo' : 'Configurar Préstamo' }}</h1>
+      <p class="text-slate-500 dark:text-slate-400 mt-1">{{ isEditMode ? 'Modifica las condiciones del préstamo. Esto generará un nuevo plan de cuotas.' : 'Define el monto, tasa de interés y los plazos para generar las cuotas automáticamente.' }}</p>
     </div>
     
-    <div class="p-8">
+    <div class="p-5 sm:p-8">
+      <div *ngIf="isEditingLoanWithPayments || editSafetyCheckFailed" role="alert" class="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200">
+        <ng-container *ngIf="editSafetyCheckFailed; else paidLoanEdit">No se pudo verificar el historial desde el servidor. No guardes cambios hasta recuperar la conexión.</ng-container>
+        <ng-template #paidLoanEdit>Este préstamo ya tiene pagos registrados. Para proteger su historial, no se permite recalcular sus cuotas; crea un préstamo nuevo si necesitas refinanciarlo.</ng-template>
+      </div>
       <form *ngIf="!isPreviewMode" [formGroup]="loanForm" (ngSubmit)="onSubmit()" class="space-y-8">
         
         <!-- Sección 1: Cliente -->
         <div>
-          <h2 class="text-lg font-bold text-slate-800 mb-4 flex items-center">
+          <h2 class="text-lg font-bold text-slate-800 dark:text-slate-100 mb-4 flex items-center">
             <span class="bg-emerald-100 text-emerald-600 w-6 h-6 rounded-full inline-flex items-center justify-center text-sm mr-2">1</span>
             Seleccionar Cliente
           </h2>
           <div class="space-y-2">
             <select formControlName="clientId" 
-                    class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition appearance-none"
+                    class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-700/50 text-slate-900 dark:text-slate-100 border border-slate-200 dark:border-slate-600 rounded-xl focus:bg-white dark:focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition appearance-none"
                     [ngClass]="{'border-red-500 focus:ring-red-500': loanForm.get('clientId')?.invalid && loanForm.get('clientId')?.touched}">
               <option value="" disabled selected>Selecciona un cliente de la lista...</option>
               <option *ngFor="let client of clients$ | async" [value]="client.id">
@@ -35,47 +39,47 @@
           </div>
         </div>
 
-        <hr class="border-slate-100">
+        <hr class="border-slate-100 dark:border-slate-700">
 
         <!-- Sección 2: Tipo de Préstamo -->
         <div>
-          <h2 class="text-lg font-bold text-slate-800 mb-4 flex items-center">
+          <h2 class="text-lg font-bold text-slate-800 dark:text-slate-100 mb-4 flex items-center">
             <span class="bg-emerald-100 text-emerald-600 w-6 h-6 rounded-full inline-flex items-center justify-center text-sm mr-2">2</span>
             Tipo de Préstamo
           </h2>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <button type="button" id="loan-type-amortized" (click)="setLoanType('amortized')"
                     class="text-left p-5 rounded-xl border-2 transition focus:outline-none"
-                    [ngClass]="!isInterestOnly ? 'border-emerald-500 bg-emerald-50 shadow-sm' : 'border-slate-200 bg-slate-50 hover:border-slate-300'">
+                    [ngClass]="!isInterestOnly ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-500/10 shadow-sm' : 'border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700/50 hover:border-slate-300 dark:hover:border-slate-500'">
               <div class="flex items-center justify-between mb-2">
-                <span class="font-bold text-slate-800">Capital + Interés</span>
+                <span class="font-bold text-slate-800 dark:text-slate-100">Capital + Interés</span>
                 <span class="w-5 h-5 rounded-full border-2 flex items-center justify-center"
-                      [ngClass]="!isInterestOnly ? 'border-emerald-500' : 'border-slate-300'">
+                      [ngClass]="!isInterestOnly ? 'border-emerald-500' : 'border-slate-300 dark:border-slate-500'">
                   <span *ngIf="!isInterestOnly" class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
                 </span>
               </div>
-              <p class="text-sm text-slate-500">Cada cuota paga una parte del capital y del interés. El préstamo termina al completar las cuotas.</p>
+              <p class="text-sm text-slate-500 dark:text-slate-400">Cada cuota paga una parte del capital y del interés. El préstamo termina al completar las cuotas.</p>
             </button>
             <button type="button" id="loan-type-interest-only" (click)="setLoanType('interest_only')"
                     class="text-left p-5 rounded-xl border-2 transition focus:outline-none"
-                    [ngClass]="isInterestOnly ? 'border-emerald-500 bg-emerald-50 shadow-sm' : 'border-slate-200 bg-slate-50 hover:border-slate-300'">
+                    [ngClass]="isInterestOnly ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-500/10 shadow-sm' : 'border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700/50 hover:border-slate-300 dark:hover:border-slate-500'">
               <div class="flex items-center justify-between mb-2">
-                <span class="font-bold text-slate-800">Solo Interés</span>
+                <span class="font-bold text-slate-800 dark:text-slate-100">Solo Interés</span>
                 <span class="w-5 h-5 rounded-full border-2 flex items-center justify-center"
-                      [ngClass]="isInterestOnly ? 'border-emerald-500' : 'border-slate-300'">
+                      [ngClass]="isInterestOnly ? 'border-emerald-500' : 'border-slate-300 dark:border-slate-500'">
                   <span *ngIf="isInterestOnly" class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
                 </span>
               </div>
-              <p class="text-sm text-slate-500">El cliente paga solo el interés cada período y abona al capital cuando desee. El interés baja según el capital pendiente.</p>
+              <p class="text-sm text-slate-500 dark:text-slate-400">El cliente paga solo el interés cada período y abona al capital cuando desee. El interés baja según el capital pendiente.</p>
             </button>
           </div>
         </div>
 
-        <hr class="border-slate-100">
+        <hr class="border-slate-100 dark:border-slate-700">
 
         <!-- Sección 3: Configuración del Préstamo -->
         <div>
-          <h2 class="text-lg font-bold text-slate-800 mb-4 flex items-center">
+          <h2 class="text-lg font-bold text-slate-800 dark:text-slate-100 mb-4 flex items-center">
             <span class="bg-emerald-100 text-emerald-600 w-6 h-6 rounded-full inline-flex items-center justify-center text-sm mr-2">3</span>
             Términos del Préstamo
           </h2>
@@ -83,48 +87,53 @@
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <!-- Monto -->
             <div class="space-y-2">
-              <label class="block text-sm font-medium text-slate-700">Monto del Préstamo ($)</label>
+              <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">Monto del Préstamo ($)</label>
               <div class="relative">
                 <span class="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400 font-medium">$</span>
                 <input type="number" formControlName="amount" placeholder="0.00" 
-                       class="w-full pl-8 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition">
+                       class="w-full pl-8 pr-4 py-3 bg-slate-50 dark:bg-slate-700/50 text-slate-900 dark:text-slate-100 border border-slate-200 dark:border-slate-600 rounded-xl focus:bg-white dark:focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition">
               </div>
             </div>
 
             <!-- Tasa de Interés + Período -->
             <div class="space-y-2">
-              <label class="block text-sm font-medium text-slate-700">Tasa de Interés (%)</label>
+              <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">Tasa de Interés (%)</label>
               <div class="flex gap-2">
                 <div class="relative flex-1">
                   <input type="number" id="interest-rate" formControlName="interestRate" placeholder="0" step="0.01"
-                         class="w-full pl-4 pr-8 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition">
+                         class="w-full pl-4 pr-8 py-3 bg-slate-50 dark:bg-slate-700/50 text-slate-900 dark:text-slate-100 border border-slate-200 dark:border-slate-600 rounded-xl focus:bg-white dark:focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition">
                   <span class="absolute right-4 top-1/2 transform -translate-y-1/2 text-slate-400 font-medium">%</span>
                 </div>
                 <select id="interest-period" formControlName="interestPeriod"
-                        class="w-40 px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition">
+                        class="w-40 max-w-[45%] px-3 sm:px-4 py-3 bg-slate-50 dark:bg-slate-700/50 text-slate-900 dark:text-slate-100 border border-slate-200 dark:border-slate-600 rounded-xl focus:bg-white dark:focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition">
                   <option value="monthly">Mensual</option>
                   <option value="biweekly">Quincenal</option>
                   <option value="annual">Anual</option>
                   <option *ngIf="isLegacyLoan" value="total">Sobre el total</option>
                 </select>
               </div>
-              <p *ngIf="loanForm.get('interestPeriod')?.value !== 'total'" class="text-xs text-slate-500">
-                Equivale a <span class="font-semibold text-emerald-600">{{ loanSummary.ratePerPayment | number:'1.0-4' }}%</span> por cada cuota ({{ loanService.frequencyLabel(loanForm.get('paymentFrequency')?.value) | lowercase }}).
+              <p *ngIf="loanForm.get('interestPeriod')?.value !== 'total'" class="text-xs text-slate-500 dark:text-slate-400">
+                Equivale a <span class="font-semibold text-emerald-600 dark:text-emerald-400">{{ loanSummary.ratePerPayment | number:'1.0-4' }}%</span> por cada cuota ({{ loanService.frequencyLabel(loanForm.get('paymentFrequency')?.value) | lowercase }}).
+              </p>
+              <p *ngIf="!isInterestOnly" class="text-xs text-slate-500 dark:text-slate-400">
+                {{ loanForm.get('interestMethod')?.value === 'reducing_balance'
+                  ? 'Interés calculado sobre el saldo de capital pendiente; las cuotas se amortizan y la última puede variar por redondeo.'
+                  : 'Este préstamo conserva su cálculo original de interés fijo sobre el monto inicial.' }}
               </p>
             </div>
 
             <!-- Duración (solo Capital + Interés) -->
             <div *ngIf="!isInterestOnly" class="space-y-2">
-              <label class="block text-sm font-medium text-slate-700">Duración (Cantidad de Cuotas)</label>
+              <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">Duración (Cantidad de Cuotas)</label>
               <input type="number" formControlName="duration" placeholder="Ej. 12" 
-                     class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition">
+                     class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-700/50 text-slate-900 dark:text-slate-100 border border-slate-200 dark:border-slate-600 rounded-xl focus:bg-white dark:focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition">
             </div>
 
             <!-- Frecuencia -->
             <div class="space-y-2">
-              <label class="block text-sm font-medium text-slate-700">Frecuencia de Pago</label>
+              <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">Frecuencia de Pago</label>
               <select formControlName="paymentFrequency" 
-                      class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition appearance-none">
+                      class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-700/50 text-slate-900 dark:text-slate-100 border border-slate-200 dark:border-slate-600 rounded-xl focus:bg-white dark:focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition appearance-none">
                 <option value="daily">Diario</option>
                 <option value="weekly">Semanal</option>
                 <option value="biweekly">Quincenal</option>
@@ -134,59 +143,62 @@
 
             <!-- Fecha de Inicio -->
             <div class="space-y-2">
-              <label class="block text-sm font-medium text-slate-700">Fecha de Inicio</label>
+              <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">Fecha de Inicio</label>
               <input type="date" formControlName="startDate"
-                     class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition">
+                     class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-700/50 text-slate-900 dark:text-slate-100 border border-slate-200 dark:border-slate-600 rounded-xl focus:bg-white dark:focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition">
             </div>
           </div>
         </div>
 
         <!-- Resumen Solo Interés (Live Preview) -->
-        <div *ngIf="loanForm.get('amount')?.value > 0 && isInterestOnly" class="bg-emerald-50 rounded-xl p-6 border border-emerald-100 mb-6 animate-fade-in-up">
-          <h3 class="text-sm font-bold text-emerald-800 uppercase tracking-wider mb-4">Resumen del Préstamo</h3>
+        <div *ngIf="loanForm.get('amount')?.value > 0 && isInterestOnly" class="bg-emerald-50 dark:bg-emerald-500/10 rounded-xl p-4 sm:p-6 border border-emerald-100 dark:border-emerald-500/20 mb-6 animate-fade-in-up">
+          <h3 class="text-sm font-bold text-emerald-800 dark:text-emerald-200 uppercase tracking-wider mb-4">Resumen del Préstamo</h3>
           <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
             <div>
-              <div class="text-xs text-emerald-600 mb-1">Capital Prestado</div>
-              <div class="text-xl font-bold text-slate-800">${{ loanSummary.totalAmount | number:'1.2-2' }}</div>
+              <div class="text-xs text-emerald-600 dark:text-emerald-400 mb-1">Capital Prestado</div>
+              <div class="text-xl font-bold text-slate-800 dark:text-slate-100">${{ loanSummary.totalAmount | number:'1.2-2' }}</div>
             </div>
-            <div class="text-sm text-slate-600">
+            <div class="text-sm text-slate-600 dark:text-slate-300">
               Se cobra el interés {{ loanSummary.freqLabel }} hasta que el cliente devuelva el capital. Cada abono a capital reduce el interés de las cuotas siguientes.
             </div>
-            <div class="bg-white p-4 rounded-lg shadow-sm border border-emerald-200 text-center">
-              <div class="text-xs text-emerald-600 font-bold mb-1 uppercase tracking-wide">Interés por Cuota</div>
-              <div class="text-3xl font-black text-emerald-600">
+            <div class="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-sm border border-emerald-200 dark:border-emerald-500/30 text-center">
+              <div class="text-xs text-emerald-600 dark:text-emerald-400 font-bold mb-1 uppercase tracking-wide">Interés por Cuota</div>
+              <div class="text-3xl font-black text-emerald-600 dark:text-emerald-400">
                 ${{ loanSummary.installmentAmount | number:'1.2-2' }}
               </div>
-              <div class="text-xs font-medium text-slate-500 mt-1">{{ loanSummary.freqLabel }}</div>
+              <div class="text-xs font-medium text-slate-500 dark:text-slate-400 mt-1">{{ loanSummary.freqLabel }}</div>
             </div>
           </div>
         </div>
 
         <!-- Resumen del Préstamo (Live Preview) -->
-        <div *ngIf="loanForm.get('amount')?.value > 0 && !isInterestOnly" class="bg-emerald-50 rounded-xl p-6 border border-emerald-100 mb-6 animate-fade-in-up">
-          <h3 class="text-sm font-bold text-emerald-800 uppercase tracking-wider mb-4">Resumen del Préstamo</h3>
+        <div *ngIf="loanForm.get('amount')?.value > 0 && !isInterestOnly" class="bg-emerald-50 dark:bg-emerald-500/10 rounded-xl p-4 sm:p-6 border border-emerald-100 dark:border-emerald-500/20 mb-6 animate-fade-in-up">
+          <h3 class="text-sm font-bold text-emerald-800 dark:text-emerald-200 uppercase tracking-wider mb-4">Resumen del Préstamo</h3>
           <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
             <div>
-              <div class="text-xs text-emerald-600 mb-1">Total Intereses</div>
-              <div class="text-xl font-bold text-slate-800">${{ loanSummary.totalInterest | number:'1.2-2' }}</div>
+              <div class="text-xs text-emerald-600 dark:text-emerald-400 mb-1">Total Intereses</div>
+              <div class="text-xl font-bold text-slate-800 dark:text-slate-100">${{ loanSummary.totalInterest | number:'1.2-2' }}</div>
             </div>
             <div>
-              <div class="text-xs text-emerald-600 mb-1">Total a Devolver</div>
-              <div class="text-xl font-bold text-slate-800">${{ loanSummary.totalAmount | number:'1.2-2' }}</div>
+              <div class="text-xs text-emerald-600 dark:text-emerald-400 mb-1">Total a Devolver</div>
+              <div class="text-xl font-bold text-slate-800 dark:text-slate-100">${{ loanSummary.totalAmount | number:'1.2-2' }}</div>
             </div>
-            <div class="bg-white p-4 rounded-lg shadow-sm border border-emerald-200 text-center">
-              <div class="text-xs text-emerald-600 font-bold mb-1 uppercase tracking-wide">Valor de la Cuota</div>
-              <div class="text-3xl font-black text-emerald-600">
+            <div class="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-sm border border-emerald-200 dark:border-emerald-500/30 text-center">
+              <div class="text-xs text-emerald-600 dark:text-emerald-400 font-bold mb-1 uppercase tracking-wide">Primera Cuota</div>
+              <div class="text-3xl font-black text-emerald-600 dark:text-emerald-400">
                 ${{ loanSummary.installmentAmount | number:'1.2-2' }}
               </div>
-              <div class="text-xs font-medium text-slate-500 mt-1">{{ loanSummary.freqLabel }}</div>
+              <div class="text-xs font-medium text-slate-500 dark:text-slate-400 mt-1">{{ loanSummary.freqLabel }}</div>
+              <div class="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                Última: ${{ loanSummary.finalInstallmentAmount | number:'1.2-2' }}
+              </div>
             </div>
           </div>
         </div>
 
         <!-- Acciones -->
-        <div class="pt-6 border-t border-slate-100 flex items-center justify-end space-x-4">
-          <a routerLink="/loans" class="px-6 py-3 font-medium text-slate-500 hover:text-slate-800 transition">Cancelar</a>
+        <div class="pt-6 border-t border-slate-100 dark:border-slate-700 flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-3 sm:gap-4">
+          <a routerLink="/loans" class="px-6 py-3 text-center font-medium text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-100 transition">Cancelar</a>
           <button type="submit" [disabled]="isSubmitting"
                   class="bg-emerald-500 hover:bg-emerald-600 text-white px-8 py-3 rounded-xl shadow-sm shadow-emerald-500/30 transition font-medium flex items-center disabled:opacity-50 disabled:cursor-not-allowed">
             <svg *ngIf="!isSubmitting" class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
@@ -202,46 +214,52 @@
       <!-- Vista Previa de Cuotas -->
       <div *ngIf="isPreviewMode" class="animate-fade-in-up space-y-8">
         <!-- Resumen -->
-        <div *ngIf="isInterestOnly" class="bg-emerald-50 rounded-xl p-6 border border-emerald-100">
-          <h3 class="text-sm font-bold text-emerald-800 uppercase tracking-wider mb-4">Resumen · Solo Interés</h3>
+        <div *ngIf="isInterestOnly" class="bg-emerald-50 dark:bg-emerald-500/10 rounded-xl p-4 sm:p-6 border border-emerald-100 dark:border-emerald-500/20">
+          <h3 class="text-sm font-bold text-emerald-800 dark:text-emerald-200 uppercase tracking-wider mb-4">Resumen · Solo Interés</h3>
           <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
             <div>
-              <div class="text-xs text-emerald-600 mb-1">Capital Prestado</div>
-              <div class="text-lg font-bold text-slate-800">${{ previewLoan?.amount | number:'1.2-2' }}</div>
+              <div class="text-xs text-emerald-600 dark:text-emerald-400 mb-1">Capital Prestado</div>
+              <div class="text-lg font-bold text-slate-800 dark:text-slate-100">${{ previewLoan?.amount | number:'1.2-2' }}</div>
             </div>
             <div>
-              <div class="text-xs text-emerald-600 mb-1">Tasa</div>
-              <div class="text-lg font-bold text-slate-800">{{ previewLoan?.interestRate }}% {{ loanService.interestPeriodLabel(previewLoan?.interestPeriod) }}</div>
+              <div class="text-xs text-emerald-600 dark:text-emerald-400 mb-1">Tasa</div>
+              <div class="text-lg font-bold text-slate-800 dark:text-slate-100">{{ previewLoan?.interestRate }}% {{ loanService.interestPeriodLabel(previewLoan?.interestPeriod) }}</div>
             </div>
-            <div class="bg-white p-3 rounded-lg shadow-sm border border-emerald-200 text-center">
-              <div class="text-[10px] text-emerald-600 font-bold mb-1 uppercase tracking-wide">Interés por Cuota</div>
-              <div class="text-xl font-black text-emerald-600">
+            <div class="bg-white dark:bg-slate-800 p-3 rounded-lg shadow-sm border border-emerald-200 dark:border-emerald-500/30 text-center">
+              <div class="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold mb-1 uppercase tracking-wide">Interés por Cuota</div>
+              <div class="text-xl font-black text-emerald-600 dark:text-emerald-400">
                 ${{ loanSummary.installmentAmount | number:'1.2-2' }}
               </div>
             </div>
           </div>
-          <p class="text-xs text-slate-500 mt-4">Las siguientes cuotas de interés se generan automáticamente cada período mientras quede capital pendiente.</p>
+          <p class="text-xs text-slate-500 dark:text-slate-400 mt-4">Las siguientes cuotas de interés se generan automáticamente cada período mientras quede capital pendiente.</p>
         </div>
 
-        <div *ngIf="!isInterestOnly" class="bg-emerald-50 rounded-xl p-6 border border-emerald-100">
-          <h3 class="text-sm font-bold text-emerald-800 uppercase tracking-wider mb-4">Resumen del Plan de Pagos</h3>
-          <div class="grid grid-cols-1 md:grid-cols-4 gap-6 items-center">
+        <div *ngIf="!isInterestOnly" class="bg-emerald-50 dark:bg-emerald-500/10 rounded-xl p-4 sm:p-6 border border-emerald-100 dark:border-emerald-500/20">
+          <h3 class="text-sm font-bold text-emerald-800 dark:text-emerald-200 uppercase tracking-wider mb-4">Resumen del Plan de Pagos</h3>
+          <div class="grid grid-cols-1 md:grid-cols-5 gap-6 items-center">
             <div>
-              <div class="text-xs text-emerald-600 mb-1">Monto Prestado</div>
-              <div class="text-lg font-bold text-slate-800">${{ previewLoan?.amount | number:'1.2-2' }}</div>
+              <div class="text-xs text-emerald-600 dark:text-emerald-400 mb-1">Monto Prestado</div>
+              <div class="text-lg font-bold text-slate-800 dark:text-slate-100">${{ previewLoan?.amount | number:'1.2-2' }}</div>
             </div>
             <div>
-              <div class="text-xs text-emerald-600 mb-1">Total Intereses</div>
-              <div class="text-lg font-bold text-slate-800">${{ loanSummary.totalInterest | number:'1.2-2' }}</div>
+              <div class="text-xs text-emerald-600 dark:text-emerald-400 mb-1">Total Intereses</div>
+              <div class="text-lg font-bold text-slate-800 dark:text-slate-100">${{ loanSummary.totalInterest | number:'1.2-2' }}</div>
             </div>
             <div>
-              <div class="text-xs text-emerald-600 mb-1">Total a Devolver</div>
-              <div class="text-lg font-bold text-slate-800">${{ loanSummary.totalAmount | number:'1.2-2' }}</div>
+              <div class="text-xs text-emerald-600 dark:text-emerald-400 mb-1">Total a Devolver</div>
+              <div class="text-lg font-bold text-slate-800 dark:text-slate-100">${{ loanSummary.totalAmount | number:'1.2-2' }}</div>
             </div>
-            <div class="bg-white p-3 rounded-lg shadow-sm border border-emerald-200 text-center">
-              <div class="text-[10px] text-emerald-600 font-bold mb-1 uppercase tracking-wide">Valor Cuota</div>
-              <div class="text-xl font-black text-emerald-600">
+            <div class="bg-white dark:bg-slate-800 p-3 rounded-lg shadow-sm border border-emerald-200 dark:border-emerald-500/30 text-center">
+              <div class="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold mb-1 uppercase tracking-wide">Primera Cuota</div>
+              <div class="text-xl font-black text-emerald-600 dark:text-emerald-400">
                 ${{ loanSummary.installmentAmount | number:'1.2-2' }}
+              </div>
+            </div>
+            <div class="bg-white dark:bg-slate-800 p-3 rounded-lg shadow-sm border border-emerald-200 dark:border-emerald-500/30 text-center">
+              <div class="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold mb-1 uppercase tracking-wide">Última Cuota</div>
+              <div class="text-xl font-black text-emerald-600 dark:text-emerald-400">
+                ${{ loanSummary.finalInstallmentAmount | number:'1.2-2' }}
               </div>
             </div>
           </div>
@@ -249,21 +267,21 @@
 
         <!-- Tabla de Cuotas -->
         <div>
-          <h3 class="text-lg font-bold text-slate-800 mb-4">Detalle de Cuotas Generadas</h3>
-          <div class="overflow-hidden rounded-xl border border-slate-200">
-            <table class="w-full text-left text-sm">
-              <thead class="bg-slate-50 text-slate-500">
+          <h3 class="text-lg font-bold text-slate-800 dark:text-slate-100 mb-4">Detalle de Cuotas Generadas</h3>
+          <div class="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700">
+            <table class="w-full min-w-[520px] text-left text-sm">
+              <thead class="bg-slate-50 dark:bg-slate-700/50 text-slate-500 dark:text-slate-400">
                 <tr>
                   <th class="py-3 px-4 font-medium"># Cuota</th>
                   <th class="py-3 px-4 font-medium">Fecha de Pago</th>
                   <th class="py-3 px-4 font-medium text-right">Monto</th>
                 </tr>
               </thead>
-              <tbody class="divide-y divide-slate-100">
-                <tr *ngFor="let inst of previewInstallments; let i = index" class="hover:bg-slate-50">
-                  <td class="py-3 px-4 font-medium text-slate-800">{{ i + 1 }}</td>
-                  <td class="py-3 px-4 text-slate-600">{{ inst.dueDate | date:'mediumDate' }}</td>
-                  <td class="py-3 px-4 font-medium text-slate-800 text-right">${{ inst.amount | number:'1.2-2' }}</td>
+              <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
+                <tr *ngFor="let inst of previewInstallments; let i = index" class="hover:bg-slate-50 dark:hover:bg-slate-700/50">
+                  <td class="py-3 px-4 font-medium text-slate-800 dark:text-slate-200">{{ i + 1 }}</td>
+                  <td class="py-3 px-4 text-slate-600 dark:text-slate-300">{{ inst.dueDate | date:'mediumDate' }}</td>
+                  <td class="py-3 px-4 font-medium text-slate-800 dark:text-slate-200 text-right">${{ inst.amount | number:'1.2-2' }}</td>
                 </tr>
               </tbody>
             </table>
@@ -271,8 +289,8 @@
         </div>
 
         <!-- Acciones Confirmar -->
-        <div class="pt-6 border-t border-slate-100 flex items-center justify-end space-x-4">
-          <button type="button" (click)="cancelPreview()" class="px-6 py-3 font-medium text-slate-500 hover:text-slate-800 transition">Volver a Editar</button>
+        <div class="pt-6 border-t border-slate-100 dark:border-slate-700 flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-3 sm:gap-4">
+          <button type="button" (click)="cancelPreview()" class="px-6 py-3 font-medium text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-100 transition">Volver a Editar</button>
           <button type="button" (click)="confirmAndSave()" [disabled]="isSubmitting"
                   class="bg-emerald-500 hover:bg-emerald-600 text-white px-8 py-3 rounded-xl shadow-sm shadow-emerald-500/30 transition font-medium flex items-center disabled:opacity-50 disabled:cursor-not-allowed">
             <svg *ngIf="isSubmitting" class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">

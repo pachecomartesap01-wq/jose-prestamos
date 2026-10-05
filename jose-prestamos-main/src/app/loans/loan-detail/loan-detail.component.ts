@@ -3,8 +3,11 @@ import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { LoanService } from '../../services/loan.service';
 import { ClientService } from '../../services/client.service';
+import { AuthService } from '../../services/auth.service';
 import { Observable, BehaviorSubject, switchMap, map, tap } from 'rxjs';
-import { Loan, Installment, CapitalPayment } from '../../models/loan.model';
+import { Loan, Installment } from '../../models/loan.model';
+import { PaymentActor, PaymentMethod } from '../../models/payment-history.model';
+import { PaymentReceipt, PaymentReceiptService } from '../../services/payment-receipt.service';
 
 @Component({
   selector: 'app-loan-detail',
@@ -18,8 +21,20 @@ export class LoanDetailComponent implements OnInit {
   private router = inject(Router);
   loanService = inject(LoanService);
   private clientService = inject(ClientService);
+  auth = inject(AuthService);
+  private receiptService = inject(PaymentReceiptService);
 
   loan$: Observable<any> | undefined;
+  lastReceipt: PaymentReceipt | null = null;
+  paymentConfirmation: {
+    clientName: string;
+    loanId: string;
+    description: string;
+    amount: number;
+    paymentMethod: PaymentMethod;
+  } | null = null;
+  isConfirmingPayment = false;
+  private pendingPaymentAction?: (paymentMethod: PaymentMethod) => Promise<void>;
 
   /** Evita escribir varias veces la misma sincronización de cuotas. */
   private lastSyncKey = '';
@@ -80,7 +95,7 @@ export class LoanDetailComponent implements OnInit {
 
   /** Préstamos de Solo Interés: genera las cuotas de interés que ya correspondan. */
   private async syncInterestOnly(loan: Loan) {
-    if (!loan.id || !this.loanService.isInterestOnly(loan) || loan.status !== 'active') return;
+    if (!this.auth.isAdmin || !loan.id || !this.loanService.isInterestOnly(loan) || loan.status !== 'active') return;
 
     const current = loan.installments || [];
     const synced = this.loanService.syncInterestOnlyInstallments(loan);
@@ -97,49 +112,51 @@ export class LoanDetailComponent implements OnInit {
     }
   }
 
-  private async saveInstallments(loan: any, installments: Installment[], errorMsg: string) {
-    try {
-      await this.loanService.updateLoan(loan.id, {
-        installments,
-        status: this.loanService.resolveStatus(loan, installments)
-      });
-    } catch (e) {
-      console.error(errorMsg, e);
-      alert(errorMsg);
-    }
-  }
-
   async toggleInstallmentStatus(loan: any, index: number) {
+    if (!this.auth.isAdmin) return;
     if (!loan || !loan.installments) return;
-    
-    const updatedInstallments = [...loan.installments];
-    const installment = updatedInstallments[index];
-    
-    installment.isPaid = !installment.isPaid;
-    if (installment.isPaid) {
-      installment.paidDate = new Date();
-      installment.paidAmount = installment.amount;
-    } else {
-      installment.paidDate = undefined;
-      installment.paidAmount = 0;
+
+    try {
+      const actor = this.getPaymentActor();
+      if (loan.installments[index].isPaid) {
+        if (!confirm(`¿Confirmas anular el pago de la cuota ${index + 1} de ${loan.clientName}?`)) return;
+        await this.loanService.reverseInstallment(loan.id, index, actor, loan.clientName);
+      } else {
+        const installment = loan.installments[index];
+        const remaining = installment.amount - (installment.paidAmount || 0);
+        this.requestPaymentConfirmation(
+          loan,
+          `Cobrar cuota ${index + 1}`,
+          remaining,
+          async paymentMethod => {
+            const receipt = await this.loanService.collectInstallment(
+              loan.id, index, remaining, actor, loan.clientName, paymentMethod
+            );
+            this.setLastReceipt(receipt, loan.clientPhone);
+          }
+        );
+      }
+    } catch (error) {
+      console.error('Error al actualizar el cobro', error);
+      alert(error instanceof Error ? error.message : 'Error al actualizar el cobro.');
     }
-    
-    await this.saveInstallments(loan, updatedInstallments, 'Error al guardar el pago');
   }
 
   async deleteLoan(id: string) {
+    if (!this.auth.isAdmin) return;
     if (confirm('¿Estás seguro de que deseas eliminar este préstamo permanentemente?')) {
       try {
         await this.loanService.deleteLoan(id);
         this.router.navigate(['/loans']);
       } catch (e) {
         console.error("Error al eliminar", e);
-        alert("Ocurrió un error al eliminar el préstamo.");
+        alert(e instanceof Error ? e.message : "Ocurrió un error al eliminar el préstamo.");
       }
     }
   }
 
   async registerAbono(loan: any, index: number) {
+    if (!this.auth.isAdmin) return;
     if (!loan || !loan.installments) return;
     
     const installment = loan.installments[index];
@@ -157,45 +174,43 @@ export class LoanDetailComponent implements OnInit {
       return;
     }
 
-    const updatedInstallments = [...loan.installments];
-    const updatedInstallment = updatedInstallments[index];
-
-    const newTotalPaid = currentPaid + amount;
-
-    if (newTotalPaid >= updatedInstallment.amount) {
-      updatedInstallment.isPaid = true;
-      updatedInstallment.paidAmount = updatedInstallment.amount;
-      updatedInstallment.paidDate = new Date();
-      alert("¡El abono cubre el total de la cuota! Se marcará como pagada.");
-    } else {
-      updatedInstallment.paidAmount = newTotalPaid;
-    }
-
-    await this.saveInstallments(loan, updatedInstallments, 'Error al guardar el abono');
+    this.requestPaymentConfirmation(loan, `Abonar a cuota ${index + 1}`, amount, async paymentMethod => {
+      const receipt = await this.loanService.collectInstallment(
+        loan.id,
+        index,
+        amount,
+        this.getPaymentActor(),
+        loan.clientName,
+        paymentMethod
+      );
+      this.setLastReceipt(receipt, loan.clientPhone);
+    });
   }
 
   async registerAbonoCapital(loan: any) {
+    if (!this.auth.isAdmin) return;
     if (loan?.isInterestOnly) {
       return this.registerCapitalPaymentInterestOnly(loan);
     }
 
-    if (!loan || !loan.installments) return;
-    
-    const unpaidIndices = loan.installments
-      .map((inst: any, index: number) => ({ inst, index }))
-      .filter((item: any) => !item.inst.isPaid);
+    if (!loan?.installments?.length) return;
 
-    if (unpaidIndices.length === 0) {
-      alert("No hay cuotas pendientes para abonar a capital.");
+    const currentTotalPending = loan.installments
+      .filter((installment: Installment) => !installment.isPaid)
+      .reduce((sum: number, installment: Installment) =>
+        sum + installment.amount - (installment.paidAmount || 0), 0);
+    const availableCapital = loan.interestMethod === 'reducing_balance'
+      ? this.loanService.amortizedOutstandingPrincipal(loan)
+      : currentTotalPending;
+    if (availableCapital <= 0) {
+      alert('No hay cuotas pendientes para abonar a capital.');
       return;
     }
 
-    const currentTotalPending = unpaidIndices.reduce((sum: number, item: any) => {
-      const remaining = item.inst.amount - (item.inst.paidAmount || 0);
-      return sum + remaining;
-    }, 0);
-
-    const input = prompt(`El total pendiente de las ${unpaidIndices.length} cuotas restantes es $${currentTotalPending.toFixed(2)}.\n\n¿De cuánto será el Abono Extraordinario a Capital?`);
+    const pendingLabel = loan.interestMethod === 'reducing_balance'
+      ? `El capital pendiente es $${availableCapital.toFixed(2)}.`
+      : `El total pendiente es $${availableCapital.toFixed(2)}.`;
+    const input = prompt(`${pendingLabel}\n\n¿De cuánto será el Abono Extraordinario a Capital?`);
     if (input === null || input.trim() === '') return;
 
     const amount = Number(input);
@@ -204,32 +219,16 @@ export class LoanDetailComponent implements OnInit {
       return;
     }
 
-    if (amount >= currentTotalPending) {
-      alert("El abono es igual o mayor a la deuda total. Mejor usa los botones de 'Cobrar Todo' en las cuotas para saldar el préstamo.");
-      return;
-    }
-
-    const deductionPerInstallment = amount / unpaidIndices.length;
-    const updatedInstallments = [...loan.installments];
-    
-    for (const item of unpaidIndices) {
-      const idx = item.index;
-      updatedInstallments[idx].amount = Math.max(0, updatedInstallments[idx].amount - deductionPerInstallment);
-      
-      if (updatedInstallments[idx].paidAmount && updatedInstallments[idx].paidAmount >= updatedInstallments[idx].amount) {
-         updatedInstallments[idx].isPaid = true;
-         updatedInstallments[idx].paidDate = new Date();
-         updatedInstallments[idx].paidAmount = updatedInstallments[idx].amount;
-      }
-    }
-
-    try {
-      await this.loanService.updateLoan(loan.id, { installments: updatedInstallments });
-      alert("Abono a capital registrado exitosamente. Las cuotas futuras han disminuido.");
-    } catch (e) {
-      console.error("Error al registrar abono a capital", e);
-      alert("Error al guardar el abono a capital");
-    }
+    this.requestPaymentConfirmation(loan, 'Abonar a capital', amount, async paymentMethod => {
+      const receipt = await this.loanService.collectAmortizedCapital(
+        loan.id,
+        amount,
+        this.getPaymentActor(),
+        loan.clientName,
+        paymentMethod
+      );
+      this.setLastReceipt(receipt, loan.clientPhone);
+    });
   }
 
   /**
@@ -238,7 +237,7 @@ export class LoanDetailComponent implements OnInit {
    * sobre el nuevo capital.
    */
   private async registerCapitalPaymentInterestOnly(loan: any) {
-    const balance: number = loan.principalBalance;
+    const balance: number = loan.principalBalance ?? loan.amount;
     if (balance <= 0) {
       alert('Este préstamo ya no tiene capital pendiente.');
       return;
@@ -252,31 +251,126 @@ export class LoanDetailComponent implements OnInit {
       alert('Por favor ingresa un monto válido mayor a 0.');
       return;
     }
-    if (amount > balance + 0.001) {
-      alert(`El abono no puede ser mayor al capital pendiente ($${balance.toFixed(2)}).`);
+    this.requestPaymentConfirmation(loan, 'Abonar a capital', amount, async paymentMethod => {
+      const result = await this.loanService.collectInterestOnlyCapital(
+        loan.id,
+        amount,
+        this.getPaymentActor(),
+        loan.clientName,
+        paymentMethod
+      );
+      this.setLastReceipt(result.receipt, loan.clientPhone);
+    });
+  }
+
+  async collectInstallment(loan: Loan, index: number) {
+    if (!this.auth.isCashier || !loan.id) return;
+
+    const installment = loan.installments?.[index];
+    if (!installment || installment.isPaid) return;
+
+    const remaining = Math.round((installment.amount - (installment.paidAmount || 0)) * 100) / 100;
+    const input = prompt(`Saldo pendiente de esta cuota: $${remaining.toFixed(2)}.\n\n¿Cuánto dinero recibe de caja?`);
+    if (input === null || input.trim() === '') return;
+
+    const amount = Number(input);
+    if (!Number.isFinite(amount) || amount <= 0) {
+      alert('Ingresa un monto válido mayor que cero.');
       return;
     }
 
-    const newBalance = Math.max(0, Math.round((balance - amount) * 100) / 100);
-    const payment: CapitalPayment = { date: new Date(), amount, balanceAfter: newBalance };
-    const capitalPayments = [...(loan.capitalPayments || []), payment];
-    const installments: Installment[] = loan.installments || [];
-    const status = this.loanService.resolveStatus(loan, installments, newBalance);
+    const clientName = String((loan as Loan & { clientName?: string }).clientName || 'Cliente desconocido');
+    this.requestPaymentConfirmation(loan, `Cobrar cuota ${index + 1}`, amount, async paymentMethod => {
+      const receipt = await this.loanService.collectInstallment(
+        loan.id!,
+        index,
+        amount,
+        this.getPaymentActor(),
+        clientName,
+        paymentMethod
+      );
+      this.setLastReceipt(receipt, (loan as Loan & { clientPhone?: string }).clientPhone);
+    });
+  }
 
+  cancelPaymentConfirmation(): void {
+    if (this.isConfirmingPayment) return;
+    this.paymentConfirmation = null;
+    this.pendingPaymentAction = undefined;
+  }
+
+  async confirmPayment(): Promise<void> {
+    if (!this.paymentConfirmation || !this.pendingPaymentAction || this.isConfirmingPayment) return;
+
+    this.isConfirmingPayment = true;
     try {
-      await this.loanService.updateLoan(loan.id, { principalBalance: newBalance, capitalPayments, status });
-      if (newBalance === 0) {
-        const pending = installments.filter(i => !i.isPaid).length;
-        alert(pending > 0
-          ? `¡Capital saldado! Quedan ${pending} cuota(s) de interés pendientes por cobrar.`
-          : '¡Capital saldado! El préstamo queda completado.');
-      } else {
-        const next = this.loanService.interestOnlyPayment(newBalance, loan);
-        alert(`Abono registrado. Capital pendiente: $${newBalance.toFixed(2)}.\nPróximas cuotas de interés: $${next.toFixed(2)}.`);
-      }
-    } catch (e) {
-      console.error('Error al registrar abono a capital', e);
-      alert('Error al guardar el abono a capital');
+      await this.pendingPaymentAction(this.paymentConfirmation.paymentMethod);
+      this.paymentConfirmation = null;
+      this.pendingPaymentAction = undefined;
+    } catch (error) {
+      console.error('Error al confirmar el pago', error);
+      alert(error instanceof Error ? error.message : 'No se pudo registrar el pago. Inténtalo de nuevo.');
+    } finally {
+      this.isConfirmingPayment = false;
     }
+  }
+
+  setConfirmationPaymentMethod(event: Event): void {
+    if (!this.paymentConfirmation || this.isConfirmingPayment) return;
+    const method = (event.target as HTMLSelectElement).value as PaymentMethod;
+    if (['cash', 'transfer', 'card', 'other'].includes(method)) {
+      this.paymentConfirmation.paymentMethod = method;
+    }
+  }
+
+  private requestPaymentConfirmation(
+    loan: Loan & { clientName?: string },
+    description: string,
+    amount: number,
+    action: (paymentMethod: PaymentMethod) => Promise<void>
+  ): void {
+    if (this.isConfirmingPayment) return;
+    this.paymentConfirmation = {
+      clientName: loan.clientName || 'Cliente desconocido',
+      loanId: loan.id || '',
+      description,
+      amount,
+      paymentMethod: 'cash'
+    };
+    this.pendingPaymentAction = action;
+  }
+
+  private getPaymentActor(): PaymentActor {
+    const role = this.auth.currentRole;
+    const username = this.auth.currentUsername;
+    if (!role || !username) throw new Error('La sesión no tiene un usuario cobrador válido.');
+    return { role, username };
+  }
+
+  async downloadReceipt(receipt: PaymentReceipt): Promise<void> {
+    try {
+      await this.receiptService.download(receipt);
+    } catch (error) {
+      console.error('No se pudo generar el comprobante', error);
+      alert('No se pudo descargar el comprobante. Inténtalo de nuevo.');
+    }
+  }
+
+  async shareReceipt(receipt: PaymentReceipt): Promise<void> {
+    try {
+      const sharedFile = await this.receiptService.share(receipt);
+      if (!sharedFile) {
+        alert('Se descargó el PDF y se abrió WhatsApp con los datos del cobro. Adjunta el archivo PDF al mensaje antes de enviarlo.');
+      }
+    } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') return;
+      console.error('No se pudo compartir el comprobante', error);
+      alert('No se pudo compartir el comprobante. Descárgalo e inténtalo de nuevo.');
+    }
+  }
+
+  private setLastReceipt(receipt: PaymentReceipt, clientPhone?: string): void {
+    this.lastReceipt = { ...receipt, clientPhone };
+    void this.downloadReceipt(this.lastReceipt);
   }
 }

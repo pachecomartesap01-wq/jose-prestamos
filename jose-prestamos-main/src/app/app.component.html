@@ -1,4 +1,4 @@
-<div class="h-screen w-full bg-slate-50 dark:bg-slate-900 flex font-sans text-slate-900 dark:text-slate-100 overflow-hidden transition-colors duration-300" *ngIf="{ isAuth: auth.authStatus$ | async, isDark: theme.isDark$ | async } as state">
+<div class="h-screen h-[100dvh] w-full bg-slate-50 dark:bg-slate-900 flex font-sans text-slate-900 dark:text-slate-100 overflow-hidden transition-colors duration-300" *ngIf="{ isAuth: auth.authStatus$ | async, isDark: theme.isDark$ | async, isCashier: auth.isCashier, isAdmin: auth.isAdmin } as state">
   <!-- Sidebar -->
   <aside *ngIf="state.isAuth" class="w-72 bg-[#0f172a] dark:bg-[#080c16] text-slate-300 flex flex-col shadow-2xl hidden md:flex relative transition-colors duration-300 border-r border-transparent dark:border-slate-800/50">
     <!-- Decoración sutil de fondo -->
@@ -10,11 +10,12 @@
       </div>
       COMOSAN PREST
     </div>
+    <p *ngIf="state.isCashier" class="px-9 pt-3 text-xs font-semibold uppercase tracking-wider text-emerald-400">Cobrador de caja</p>
     
     <nav class="flex-1 py-8 space-y-2 px-5 z-10 overflow-y-auto">
       <p class="px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-4">Menú Principal</p>
       
-      <a routerLink="/dashboard" routerLinkActive="bg-emerald-500/10 text-emerald-400 font-medium" class="group px-4 py-3.5 rounded-xl hover:bg-slate-800/50 dark:hover:bg-slate-800/80 hover:text-white transition-all duration-200 flex items-center relative overflow-hidden">
+      <a *ngIf="!state.isCashier" routerLink="/dashboard" routerLinkActive="bg-emerald-500/10 text-emerald-400 font-medium" class="group px-4 py-3.5 rounded-xl hover:bg-slate-800/50 dark:hover:bg-slate-800/80 hover:text-white transition-all duration-200 flex items-center relative overflow-hidden">
         <svg class="w-5 h-5 mr-3 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
         Dashboard
       </a>
@@ -26,7 +27,12 @@
       
       <a routerLink="/loans" routerLinkActive="bg-emerald-500/10 text-emerald-400 font-medium" class="group px-4 py-3.5 rounded-xl hover:bg-slate-800/50 dark:hover:bg-slate-800/80 hover:text-white transition-all duration-200 flex items-center relative overflow-hidden">
         <svg class="w-5 h-5 mr-3 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-        Préstamos
+        {{ state.isCashier ? 'Cobrar' : 'Préstamos' }}
+      </a>
+
+      <a *ngIf="state.isAdmin" routerLink="/payment-history" routerLinkActive="bg-emerald-500/10 text-emerald-400 font-medium" class="group px-4 py-3.5 rounded-xl hover:bg-slate-800/50 dark:hover:bg-slate-800/80 hover:text-white transition-all duration-200 flex items-center relative overflow-hidden">
+        <svg class="w-5 h-5 mr-3 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 14l2 2 4-4m5-5v11a2 2 0 01-2 2H6a2 2 0 01-2-2V7m14 0V5a2 2 0 00-2-2H8a2 2 0 00-2 2v2m12 0H6"></path></svg>
+        Historial de cobros
       </a>
       
       <!-- Alquileres: oculto temporalmente. Para reactivarlo, descomentar este enlace y las rutas en app.routes.ts
@@ -73,24 +79,31 @@
   <!-- Main Content -->
   <main class="flex-1 flex flex-col min-w-0 overflow-hidden bg-[#f8fafc] dark:bg-slate-900 transition-colors duration-300">
     <!-- Mobile Header -->
-    <header *ngIf="state.isAuth" class="h-16 bg-white dark:bg-slate-800 shadow-sm flex items-center justify-between px-6 border-b border-slate-100 dark:border-slate-700 md:hidden z-20 relative transition-colors duration-300">
-      <div class="font-bold text-xl text-emerald-600 flex items-center">
-        COMOSAN PREST
+    <header *ngIf="state.isAuth" class="min-h-16 bg-white dark:bg-slate-800 shadow-sm flex items-center justify-between gap-3 px-4 sm:px-6 py-2 border-b border-slate-100 dark:border-slate-700 md:hidden z-20 relative transition-colors duration-300">
+      <div>
+        <div class="font-bold text-xl text-emerald-600 flex items-center">COMOSAN PREST</div>
+        <div *ngIf="state.isCashier" class="text-xs text-slate-500 dark:text-slate-400">Cobrador de caja</div>
       </div>
       <div class="flex items-center space-x-2">
-        <button (click)="theme.toggleTheme()" class="text-slate-500 hover:text-emerald-600 transition-colors p-2 rounded-lg bg-slate-50 dark:bg-slate-700 dark:text-slate-400">
+        <button type="button" (click)="theme.toggleTheme()" [attr.aria-label]="state.isDark ? 'Activar modo claro' : 'Activar modo oscuro'" class="text-slate-500 hover:text-emerald-600 transition-colors p-2.5 rounded-lg bg-slate-50 dark:bg-slate-700 dark:text-slate-400">
           <svg *ngIf="!state.isDark" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
           <svg *ngIf="state.isDark" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
         </button>
-        <button (click)="logout()" class="text-slate-500 hover:text-red-600 transition-colors p-2 rounded-lg bg-slate-50 dark:bg-slate-700 dark:text-slate-400">
+        <button type="button" (click)="logout()" aria-label="Cerrar sesión" class="text-slate-500 hover:text-red-600 transition-colors p-2.5 rounded-lg bg-slate-50 dark:bg-slate-700 dark:text-slate-400">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
         </button>
       </div>
     </header>
+    <nav *ngIf="state.isAuth" aria-label="Navegación principal" class="md:hidden flex gap-2 overflow-x-auto px-4 py-2 bg-white dark:bg-slate-800 border-b border-slate-100 dark:border-slate-700">
+      <a *ngIf="!state.isCashier" routerLink="/dashboard" routerLinkActive="bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300" class="shrink-0 rounded-lg px-3 py-2 text-sm text-slate-600 dark:text-slate-300">Dashboard</a>
+      <a routerLink="/clients" routerLinkActive="bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300" class="shrink-0 rounded-lg px-3 py-2 text-sm text-slate-600 dark:text-slate-300">Clientes</a>
+      <a routerLink="/loans" routerLinkActive="bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300" class="shrink-0 rounded-lg px-3 py-2 text-sm text-slate-600 dark:text-slate-300">{{ state.isCashier ? 'Cobrar' : 'Préstamos' }}</a>
+      <a *ngIf="state.isAdmin" routerLink="/payment-history" routerLinkActive="bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300" class="shrink-0 rounded-lg px-3 py-2 text-sm text-slate-600 dark:text-slate-300">Historial</a>
+    </nav>
     
     <!-- Scrolling Content Area -->
-    <div class="flex-1 overflow-y-auto scroll-smooth" [ngClass]="state.isAuth ? 'p-4 md:p-8' : 'p-0'">
-      <div class="mx-auto w-full h-full" [ngClass]="state.isAuth ? 'max-w-7xl' : ''">
+    <div class="min-h-0 flex-1 overflow-y-auto overscroll-y-contain scroll-smooth" [ngClass]="state.isAuth ? 'p-4 sm:p-6 lg:p-8' : 'p-0'">
+      <div class="mx-auto w-full min-h-full" [ngClass]="state.isAuth ? 'max-w-7xl' : ''">
         <router-outlet></router-outlet>
       </div>
     </div>

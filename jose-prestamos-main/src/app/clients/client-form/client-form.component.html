@@ -12,6 +12,9 @@
     </div>
     
     <div class="p-8">
+      <div *ngIf="saveError" role="alert" class="mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300">
+        {{ saveError }}
+      </div>
       <form [formGroup]="clientForm" (ngSubmit)="onSubmit()" class="space-y-8">
         
         <!-- Sección: Datos Personales -->
@@ -37,6 +40,9 @@
                      [ngClass]="{'border-red-500 focus:ring-red-500': clientForm.get('documentId')?.invalid && clientForm.get('documentId')?.touched}">
               <div *ngIf="clientForm.get('documentId')?.invalid && clientForm.get('documentId')?.touched" class="text-red-500 dark:text-red-400 text-xs mt-1">
                 La cédula es requerida.
+              </div>
+              <div *ngIf="documentIdConflict" role="alert" class="text-red-600 dark:text-red-400 text-xs mt-1">
+                Ya existe un cliente con ese documento de identidad.
               </div>
             </div>
 

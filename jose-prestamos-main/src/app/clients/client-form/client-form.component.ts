@@ -21,6 +21,8 @@ export class ClientFormComponent implements OnInit {
   isSubmitting = false;
   isEditMode = false;
   clientId: string | null = null;
+  documentIdConflict = false;
+  saveError: string | null = null;
 
   constructor(private fb: FormBuilder) {
     this.clientForm = this.fb.group({
@@ -51,21 +53,31 @@ export class ClientFormComponent implements OnInit {
   async onSubmit() {
     if (this.clientForm.valid) {
       this.isSubmitting = true;
+      this.documentIdConflict = false;
+      this.saveError = null;
       try {
+        const documentId = String(this.clientForm.get('documentId')?.value ?? '').trim();
+        if (await this.clientService.isDocumentIdInUse(documentId, this.isEditMode ? this.clientId || undefined : undefined)) {
+          this.documentIdConflict = true;
+          return;
+        }
         if (this.isEditMode && this.clientId) {
-          const updatedClient: Partial<Client> = { ...this.clientForm.value };
+          const updatedClient: Partial<Client> = { ...this.clientForm.value, documentId };
           await this.clientService.updateClient(this.clientId, updatedClient);
         } else {
           const newClient: Client = {
             ...this.clientForm.value,
+            documentId,
             createdAt: new Date()
           };
           await this.clientService.addClient(newClient);
         }
         this.router.navigate(['/clients']);
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error('Error saving document: ', error);
-        alert('Error de Firebase: ' + (error.message || error));
+        this.saveError = error instanceof Error
+          ? `No se pudo guardar el cliente: ${error.message}`
+          : 'No se pudo guardar el cliente. Verifica la conexión e inténtalo de nuevo.';
       } finally {
         this.isSubmitting = false;
       }

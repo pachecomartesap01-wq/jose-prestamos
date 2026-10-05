@@ -10,7 +10,12 @@ export const authGuard: CanActivateFn = (route, state) => {
     return true;
   }
 
-  // Not authenticated, redirect to login
-  router.navigate(['/login']);
-  return false;
+  return router.createUrlTree(['/login'], { queryParams: { returnUrl: state.url } });
+};
+
+export const adminGuard: CanActivateFn = () => {
+  const authService = inject(AuthService);
+  const router = inject(Router);
+
+  return authService.isAdmin ? true : router.createUrlTree(['/loans']);
 };

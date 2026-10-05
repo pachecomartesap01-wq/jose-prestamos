@@ -4,7 +4,7 @@ import { RouterModule, Router, ActivatedRoute } from '@angular/router';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { LoanService } from '../../services/loan.service';
 import { ClientService } from '../../services/client.service';
-import { Loan, Installment, LoanType, InterestPeriod, PaymentFrequency } from '../../models/loan.model';
+import { Loan, Installment, LoanType, InterestMethod, InterestPeriod, PaymentFrequency } from '../../models/loan.model';
 import { Client } from '../../models/client.model';
 import { Observable } from 'rxjs';
 
@@ -32,6 +32,8 @@ export class LoanFormComponent implements OnInit {
 
   isEditMode = false;
   editLoanId: string | null = null;
+  isEditingLoanWithPayments = false;
+  editSafetyCheckFailed = false;
   /** Préstamos antiguos guardados con tasa "sobre el total". */
   isLegacyLoan = false;
 
@@ -42,6 +44,7 @@ export class LoanFormComponent implements OnInit {
       amount: [0, [Validators.required, Validators.min(1)]],
       interestRate: [0, [Validators.required, Validators.min(0)]],
       interestPeriod: ['monthly' as InterestPeriod, [Validators.required]],
+      interestMethod: ['reducing_balance' as InterestMethod, [Validators.required]],
       duration: [1, [Validators.required, Validators.min(1)]],
       paymentFrequency: ['monthly' as PaymentFrequency, [Validators.required]],
       startDate: [this.toInputDate(new Date()), [Validators.required]]
@@ -71,10 +74,22 @@ export class LoanFormComponent implements OnInit {
           amount: loan.amount,
           interestRate: loan.interestRate,
           interestPeriod: loan.interestPeriod || 'total',
+          interestMethod: loan.interestMethod || 'flat',
           duration: loan.duration || 1,
           paymentFrequency: loan.paymentFrequency,
           startDate: formattedDate
         });
+        this.isEditingLoanWithPayments = Boolean(
+          loan.installments?.some(installment => installment.isPaid || (installment.paidAmount || 0) > 0) ||
+          loan.capitalPayments?.length ||
+          loan.status !== 'active'
+        );
+        try {
+          this.isEditingLoanWithPayments ||= await this.loanService.hasPaymentHistoryForLoan(this.editLoanId);
+        } catch (error) {
+          console.error('No se pudo verificar el historial del préstamo antes de editar', error);
+          this.editSafetyCheckFailed = true;
+        }
       }
     }
   }
@@ -103,6 +118,7 @@ export class LoanFormComponent implements OnInit {
       amount,
       interestRate: Number(v.interestRate),
       interestPeriod: v.interestPeriod,
+      interestMethod: v.interestMethod,
       duration: loanType === 'interest_only' ? 0 : Number(v.duration),
       paymentFrequency: v.paymentFrequency,
       startDate: this.fromInputDate(v.startDate),
@@ -133,7 +149,15 @@ export class LoanFormComponent implements OnInit {
     if (!this.previewLoan) return;
     
     if (this.isEditMode) {
-      const confirmed = confirm('⚠️ ADVERTENCIA: Estás editando un préstamo existente.\n\nAl guardar, se reemplazará todo el calendario de pagos actual con estas nuevas cuotas. Se perderá permanentemente el historial de pagos realizados.\n\n¿Estás seguro de que deseas guardar los cambios?');
+      if (this.editSafetyCheckFailed) {
+        alert('No se pudo verificar el historial de pagos en el servidor. Conéctate e inténtalo de nuevo antes de editar el préstamo.');
+        return;
+      }
+      if (this.isEditingLoanWithPayments) {
+        alert('Este préstamo ya tiene pagos registrados y no se puede recalcular sin perder su historial. Registra un nuevo préstamo para refinanciarlo.');
+        return;
+      }
+      const confirmed = confirm('Al guardar se actualizarán las condiciones y el calendario de cuotas de este préstamo. ¿Deseas continuar?');
       if (!confirmed) return;
     }
 
@@ -186,14 +210,30 @@ export class LoanFormComponent implements OnInit {
       };
     }
 
-    const totalInterest = this.loanService.amortizedTotalInterest({ amount, interestRate: rate, interestPeriod: period, duration, paymentFrequency: freq });
+    const interestMethod: InterestMethod = this.loanForm.get('interestMethod')?.value || 'flat';
+    const previewInstallments = this.loanService.calculateInstallments({
+      amount,
+      interestRate: rate,
+      interestPeriod: period,
+      interestMethod,
+      duration,
+      paymentFrequency: freq,
+      startDate: this.fromInputDate(this.loanForm.get('startDate')?.value || this.toInputDate(new Date())),
+      clientId: '',
+      status: 'active'
+    });
+    const totalInterest = interestMethod === 'reducing_balance'
+      ? previewInstallments.reduce((sum, installment) => sum + (installment.interestAmount || 0), 0)
+      : this.loanService.amortizedTotalInterest({ amount, interestRate: rate, interestPeriod: period, duration, paymentFrequency: freq, interestMethod });
     const totalAmount = amount + totalInterest;
-    const installmentAmount = duration > 0 ? totalAmount / duration : 0;
+    const installmentAmount = previewInstallments[0]?.amount ?? 0;
+    const finalInstallmentAmount = previewInstallments[previewInstallments.length - 1]?.amount ?? 0;
 
     return {
       totalInterest,
       totalAmount,
       installmentAmount,
+      finalInstallmentAmount,
       ratePerPayment,
       freqLabel
     };

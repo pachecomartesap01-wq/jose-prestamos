@@ -1,0 +1,97 @@
+<div class="max-w-7xl mx-auto space-y-6 animate-fade-in-up">
+  <div>
+    <h1 class="text-3xl font-bold text-slate-800 dark:text-slate-100">Historial de cobros</h1>
+    <p class="text-slate-500 dark:text-slate-400 mt-1">
+      Consulta quién registró cada cobro, a qué cliente, cuándo y mediante qué método. El historial comienza con los cobros registrados desde esta actualización.
+    </p>
+  </div>
+
+  <section class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 overflow-hidden">
+    <div class="p-5 border-b border-slate-100 dark:border-slate-700 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
+      <input
+        type="search"
+        [formControl]="searchControl"
+        placeholder="Buscar cliente, cobrador o préstamo..."
+        class="flex-1 px-4 py-2 border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700/50 text-slate-900 dark:text-slate-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500">
+      <select
+        [formControl]="typeControl"
+        class="px-4 py-2 border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700/50 text-slate-700 dark:text-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500">
+        <option value="all">Todos los movimientos</option>
+        <option value="installment">Cobros de cuotas</option>
+        <option value="capital">Abonos a capital</option>
+        <option value="reversal">Anulaciones</option>
+      </select>
+      <label class="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-300">
+        Desde
+        <input type="date" [formControl]="startDateControl"
+          class="min-w-0 flex-1 px-3 py-2 border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700/50 text-slate-700 dark:text-slate-200 rounded-lg">
+      </label>
+      <label class="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-300">
+        Hasta
+        <input type="date" [formControl]="endDateControl"
+          class="min-w-0 flex-1 px-3 py-2 border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700/50 text-slate-700 dark:text-slate-200 rounded-lg">
+      </label>
+    </div>
+
+    <div class="overflow-x-auto">
+      <table class="w-full min-w-[900px] text-left">
+        <thead class="bg-slate-50 dark:bg-slate-800/70 text-slate-500 dark:text-slate-400 text-sm">
+          <tr>
+            <th class="py-3 px-5 font-medium">Fecha y hora</th>
+            <th class="py-3 px-5 font-medium">Cliente</th>
+            <th class="py-3 px-5 font-medium">Préstamo / cuota</th>
+            <th class="py-3 px-5 font-medium">Movimiento</th>
+            <th class="py-3 px-5 font-medium">Registrado por</th>
+            <th class="py-3 px-5 font-medium">Método</th>
+            <th class="py-3 px-5 font-medium text-right">Monto</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
+          <ng-container *ngIf="payments$ | async as payments">
+            <tr *ngIf="payments.length === 0">
+              <td colspan="7" class="py-10 px-5 text-center text-slate-500 dark:text-slate-400">
+                {{ loadError || 'No hay movimientos que coincidan con la búsqueda.' }}
+              </td>
+            </tr>
+            <tr *ngFor="let payment of payments" class="text-sm hover:bg-slate-50 dark:hover:bg-slate-700/40">
+              <td class="py-4 px-5 text-slate-600 dark:text-slate-300 whitespace-nowrap">
+                {{ payment.collectedAt | date:'medium' }}
+              </td>
+              <td class="py-4 px-5">
+                <div class="font-medium text-slate-800 dark:text-slate-100">{{ payment.clientName }}</div>
+                <div class="text-xs text-slate-400">Cliente: {{ payment.clientId }}</div>
+              </td>
+              <td class="py-4 px-5 text-slate-600 dark:text-slate-300">
+                <div class="font-mono text-xs">{{ payment.loanId }}</div>
+                <div *ngIf="payment.installmentNumber" class="text-xs mt-1">Cuota {{ payment.installmentNumber }}</div>
+              </td>
+              <td class="py-4 px-5 text-slate-600 dark:text-slate-300">{{ eventLabel(payment.type) }}</td>
+              <td class="py-4 px-5">
+                <div class="font-medium text-slate-700 dark:text-slate-200">{{ payment.collectedBy }}</div>
+                <div class="text-xs text-slate-400">{{ roleLabel(payment.collectorRole) }}</div>
+              </td>
+              <td class="py-4 px-5 text-slate-600 dark:text-slate-300">
+                {{ paymentMethodLabel(payment.paymentMethod, payment.type) }}
+              </td>
+              <td class="py-4 px-5 text-right font-semibold whitespace-nowrap"
+                  [ngClass]="payment.type === 'reversal' ? 'text-red-600 dark:text-red-400' : 'text-emerald-700 dark:text-emerald-400'">
+                {{ payment.type === 'reversal' ? '- ' : '' }}${{ payment.amount | number:'1.2-2' }}
+              </td>
+            </tr>
+          </ng-container>
+        </tbody>
+      </table>
+    </div>
+    <div class="flex flex-col items-center gap-2 border-t border-slate-100 p-4 dark:border-slate-700">
+      <p *ngIf="hasMorePayments" class="text-center text-xs text-slate-400">
+        Los filtros aplican a los movimientos cargados; continúa cargando para incluir registros más antiguos.
+      </p>
+      <button *ngIf="hasMorePayments" type="button" (click)="loadMorePayments()" [disabled]="isLoadingMore"
+        class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-60 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-700">
+        {{ isLoadingMore ? 'Cargando...' : 'Cargar movimientos anteriores' }}
+      </button>
+      <p *ngIf="loadError" role="alert" class="text-sm text-red-600 dark:text-red-400">{{ loadError }}</p>
+      <p *ngIf="!isLoadingInitialPage && !hasMorePayments && !loadError" class="text-xs text-slate-400">No hay más movimientos por cargar.</p>
+    </div>
+  </section>
+</div>

@@ -3,7 +3,7 @@ import { provideRouter } from '@angular/router';
 
 import { routes } from './app.routes';
 import { initializeApp, provideFirebaseApp, getApp } from '@angular/fire/app';
-import { initializeFirestore, provideFirestore } from '@angular/fire/firestore';
+import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, provideFirestore } from '@angular/fire/firestore';
 
 const firebaseConfig = {
   apiKey: "AIzaSyD3IAs7OquOym9kuWE290Tu7VevWgZfdTE",
@@ -21,6 +21,11 @@ export const appConfig: ApplicationConfig = {
     provideRouter(routes),
     provideFirebaseApp(() => initializeApp(firebaseConfig)),
     // ignoreUndefinedProperties: evita errores al guardar campos opcionales vacíos
-    provideFirestore(() => initializeFirestore(getApp(), { ignoreUndefinedProperties: true }))
+    provideFirestore(() => initializeFirestore(getApp(), {
+      ignoreUndefinedProperties: true,
+      localCache: persistentLocalCache({
+        tabManager: persistentMultipleTabManager()
+      })
+    }))
   ]
 };

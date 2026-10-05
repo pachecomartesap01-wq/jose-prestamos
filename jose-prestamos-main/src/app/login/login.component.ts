@@ -17,6 +17,7 @@ export class LoginComponent {
   private router = inject(Router);
 
   errorMessage = '';
+  isPasswordVisible = false;
 
   constructor() {
     this.loginForm = this.fb.group({
@@ -31,7 +32,7 @@ export class LoginComponent {
       const success = this.authService.login(username, password);
       
       if (success) {
-        this.router.navigate(['/dashboard']);
+        this.router.navigate([this.authService.isCashier ? '/loans' : '/dashboard']);
       } else {
         this.errorMessage = 'Usuario o contraseña incorrectos.';
       }

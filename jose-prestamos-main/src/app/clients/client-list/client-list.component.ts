@@ -6,6 +6,7 @@ import { ClientService } from '../../services/client.service';
 import { LoanService } from '../../services/loan.service';
 import { Observable, catchError, of, combineLatest, map, startWith } from 'rxjs';
 import { Client } from '../../models/client.model';
+import { AuthService } from '../../services/auth.service';
 
 @Component({
   selector: 'app-client-list',
@@ -17,18 +18,29 @@ import { Client } from '../../models/client.model';
 export class ClientListComponent {
   private clientService = inject(ClientService);
   private loanService = inject(LoanService);
+  private auth = inject(AuthService);
   searchControl = new FormControl('');
-
-  private rawClients$ = this.clientService.getClients().pipe(
-    catchError(err => {
-      console.error('Error al cargar clientes:', err);
-      alert('Error de Firebase al leer: ' + (err.message || err));
-      return of([]); // Retorna array vacío para quitar el loading
+  loadError: string | null = null;
+  syncStatus$: Observable<{ fromCache: boolean; hasPendingWrites: boolean }> = combineLatest([
+    this.clientService.getClientsSnapshot(),
+    this.loanService.getLoansSnapshot()
+  ]).pipe(
+    map(([clients, loans]) => ({
+      fromCache: clients.fromCache || loans.fromCache,
+      hasPendingWrites: clients.hasPendingWrites || loans.hasPendingWrites
+    })),
+    catchError(() => {
+      this.loadError = 'No se pudo confirmar la sincronización de los datos.';
+      return of({ fromCache: false, hasPendingWrites: false });
     })
   );
 
-  clients$: Observable<any[]> = combineLatest([
-    this.rawClients$,
+  get isAdmin(): boolean {
+    return this.auth.isAdmin;
+  }
+
+  clients$: Observable<Array<Client & { activeLoansCount: number }>> = combineLatest([
+    this.clientService.getClients(),
     this.loanService.getLoans(),
     this.searchControl.valueChanges.pipe(startWith(''))
   ]).pipe(
@@ -37,29 +49,38 @@ export class ClientListComponent {
         const activeLoans = loans.filter(l => l.clientId === client.id && l.status === 'active');
         return {
           ...client,
+          name: String(client.name ?? 'Sin nombre'),
+          phone: String(client.phone ?? ''),
+          documentId: String(client.documentId ?? ''),
           activeLoansCount: activeLoans.length
         };
       });
 
-      if (searchTerm) {
-        const lowerTerm = searchTerm.toLowerCase();
-        mappedClients = mappedClients.filter(c => 
-          c.name.toLowerCase().includes(lowerTerm) || 
-          c.phone.includes(lowerTerm) ||
-          (c.documentId && c.documentId.includes(lowerTerm))
+      const lowerTerm = String(searchTerm ?? '').trim().toLocaleLowerCase();
+      if (lowerTerm) {
+        mappedClients = mappedClients.filter(c =>
+          c.name.toLocaleLowerCase().includes(lowerTerm) ||
+          c.phone.toLocaleLowerCase().includes(lowerTerm) ||
+          c.documentId.toLocaleLowerCase().includes(lowerTerm)
         );
       }
       return mappedClients;
+    }),
+    catchError(error => {
+      console.error('Error al cargar clientes:', error);
+      this.loadError = 'No se pudieron cargar los clientes. Verifica la conexión e inténtalo de nuevo.';
+      return of([]);
     })
   );
 
   async deleteClient(id: string) {
+    if (!this.auth.isAdmin) return;
     if (confirm('¿Estás seguro de que quieres eliminar este cliente?')) {
       try {
         await this.clientService.deleteClient(id);
       } catch (e) {
         console.error("Error eliminando cliente", e);
-        alert("Hubo un error al eliminar el cliente");
+        alert(e instanceof Error ? e.message : "Hubo un error al eliminar el cliente.");
       }
     }
   }
