@@ -1,0 +1,34 @@
+[debug] [2026-10-05T01:22:13.860Z] ----------------------------------------------------------------------
+[debug] [2026-10-05T01:22:13.863Z] Command:       C:\Program Files\nodejs\node.exe C:\Program Files\nodejs\node_modules\firebase-tools\lib\bin\firebase.js deploy
+[debug] [2026-10-05T01:22:13.863Z] CLI Version:   14.10.1
+[debug] [2026-10-05T01:22:13.863Z] Platform:      win32
+[debug] [2026-10-05T01:22:13.863Z] Node Version:  v24.9.0
+[debug] [2026-10-05T01:22:13.863Z] Time:          Sun Oct 04 2026 21:22:13 GMT-0400 (Bolivia Time)
+[debug] [2026-10-05T01:22:13.863Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2026-10-05T01:22:14.006Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-10-05T01:22:14.006Z] > authorizing via signed-in user (mruizanthony@gmail.com)
+[debug] [2026-10-05T01:22:14.006Z] [iam] checking project joseprestamos for permissions ["cloudfunctions.functions.create","cloudfunctions.functions.delete","cloudfunctions.functions.get","cloudfunctions.functions.list","cloudfunctions.functions.update","cloudfunctions.operations.get","firebase.projects.get","firebasehosting.sites.update"]
+[debug] [2026-10-05T01:22:14.007Z] Checked if tokens are valid: true, expires at: 1791166612429
+[debug] [2026-10-05T01:22:14.007Z] Checked if tokens are valid: true, expires at: 1791166612429
+[debug] [2026-10-05T01:22:14.008Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/joseprestamos:testIamPermissions [none]
+[debug] [2026-10-05T01:22:14.008Z] >>> [apiv2][(partial)header] POST https://cloudresourcemanager.googleapis.com/v1/projects/joseprestamos:testIamPermissions x-goog-quota-user=projects/joseprestamos
+[debug] [2026-10-05T01:22:14.008Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/joseprestamos:testIamPermissions {"permissions":["cloudfunctions.functions.create","cloudfunctions.functions.delete","cloudfunctions.functions.get","cloudfunctions.functions.list","cloudfunctions.functions.update","cloudfunctions.operations.get","firebase.projects.get","firebasehosting.sites.update"]}
+[debug] [2026-10-05T01:22:14.263Z] <<< [apiv2][status] POST https://cloudresourcemanager.googleapis.com/v1/projects/joseprestamos:testIamPermissions 200
+[debug] [2026-10-05T01:22:14.263Z] <<< [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/joseprestamos:testIamPermissions {"permissions":["cloudfunctions.functions.create","cloudfunctions.functions.delete","cloudfunctions.functions.get","cloudfunctions.functions.list","cloudfunctions.functions.update","cloudfunctions.operations.get","firebase.projects.get","firebasehosting.sites.update"]}
+[debug] [2026-10-05T01:22:14.263Z] Checked if tokens are valid: true, expires at: 1791166612429
+[debug] [2026-10-05T01:22:14.263Z] Checked if tokens are valid: true, expires at: 1791166612429
+[debug] [2026-10-05T01:22:14.263Z] >>> [apiv2][query] POST https://iam.googleapis.com/v1/projects/joseprestamos/serviceAccounts/joseprestamos@appspot.gserviceaccount.com:testIamPermissions [none]
+[debug] [2026-10-05T01:22:14.263Z] >>> [apiv2][body] POST https://iam.googleapis.com/v1/projects/joseprestamos/serviceAccounts/joseprestamos@appspot.gserviceaccount.com:testIamPermissions {"permissions":["iam.serviceAccounts.actAs"]}
+[debug] [2026-10-05T01:22:14.584Z] <<< [apiv2][status] POST https://iam.googleapis.com/v1/projects/joseprestamos/serviceAccounts/joseprestamos@appspot.gserviceaccount.com:testIamPermissions 200
+[debug] [2026-10-05T01:22:14.584Z] <<< [apiv2][body] POST https://iam.googleapis.com/v1/projects/joseprestamos/serviceAccounts/joseprestamos@appspot.gserviceaccount.com:testIamPermissions {"permissions":["iam.serviceAccounts.actAs"]}
+[debug] [2026-10-05T01:22:14.585Z] Checked if tokens are valid: true, expires at: 1791166612429
+[debug] [2026-10-05T01:22:14.585Z] Checked if tokens are valid: true, expires at: 1791166612429
+[debug] [2026-10-05T01:22:14.585Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/joseprestamos [none]
+[debug] [2026-10-05T01:22:15.007Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/joseprestamos 200
+[debug] [2026-10-05T01:22:15.007Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/joseprestamos {"projectId":"joseprestamos","projectNumber":"746172553460","displayName":"joseprestamos","name":"projects/joseprestamos","resources":{"hostingSite":"joseprestamos"},"state":"ACTIVE","labels":{"firebase":"enabled"},"etag":"1_840d1db3-c308-4ecf-979e-241ef9ad836e"}
+[info] 
+[info] === Deploying to 'joseprestamos'...
+[info] 
+[info] i  deploying functions, hosting 
+[info] Running command: npm --prefix "$RESOURCE_DIR" run build
